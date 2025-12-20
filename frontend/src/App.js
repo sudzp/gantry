@@ -1,27 +1,9 @@
-import React from 'react';
-
-function App() {
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <header>
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
-
-export default App;
 import React, { useState, useEffect } from 'react';
 import { Play, Upload, RefreshCw, CheckCircle, XCircle, Clock, Loader } from 'lucide-react';
 
 const API_URL = 'http://localhost:8080/api';
 
-export default function CICDDashboard() {
+function App() {
   const [workflows, setWorkflows] = useState([]);
   const [runs, setRuns] = useState([]);
   const [selectedRun, setSelectedRun] = useState(null);
@@ -288,3 +270,5 @@ export default function CICDDashboard() {
     </div>
   );
 }
+
+export default App;
