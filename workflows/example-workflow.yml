@@ -1,0 +1,42 @@
+# example-workflow.yml
+# This is an example CI/CD workflow configuration
+
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu
+    steps:
+      - name: Print environment info
+        run: |
+          echo "Starting build process..."
+          uname -a
+          
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y curl git
+          
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          echo "All tests passed!"
+          
+      - name: Build application
+        run: |
+          echo "Building application..."
+          echo "Build complete!"
+
+  deploy:
+    runs-on: alpine
+    steps:
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          echo "Deployment successful!"
