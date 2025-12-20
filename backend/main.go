@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -26,21 +27,28 @@ type Workflow struct {
 			Branches []string `yaml:"branches"`
 		} `yaml:"push"`
 	} `yaml:"on"`
-	Jobs map[string]Job `yaml:"jobs" json:"jobs"`
+	Jobs     map[string]Job `yaml:"jobs" json:"jobs"`
+	JobOrder []string       `json:"job_order"` // Preserve YAML order
 }
 
 // Job represents a single job in the workflow
 type Job struct {
-	RunsOn string `yaml:"runs-on" json:"runs_on"`
-	Steps  []Step `yaml:"steps" json:"steps"`
-	Status string `json:"status"`
-	Output string `json:"output"`
+	RunsOn    string     `yaml:"runs-on" json:"runs_on"`
+	Steps     []Step     `yaml:"steps" json:"steps"`
+	Status    string     `json:"status"`
+	Output    string     `json:"output"`
+	StartedAt time.Time  `json:"started_at,omitempty"`
+	EndedAt   *time.Time `json:"ended_at,omitempty"`
 }
 
 // Step represents a single step in a job
 type Step struct {
-	Name string `yaml:"name" json:"name"`
-	Run  string `yaml:"run" json:"run"`
+	Name      string     `yaml:"name" json:"name"`
+	Run       string     `yaml:"run" json:"run"`
+	Status    string     `json:"status,omitempty"`
+	StartedAt time.Time  `json:"started_at,omitempty"`
+	EndedAt   *time.Time `json:"ended_at,omitempty"`
+	Output    string     `json:"output,omitempty"`
 }
 
 // WorkflowRun tracks execution of a workflow
@@ -49,6 +57,7 @@ type WorkflowRun struct {
 	WorkflowName string         `json:"workflow_name"`
 	Status       string         `json:"status"` // pending, running, success, failed
 	Jobs         map[string]Job `json:"jobs"`
+	JobOrder     []string       `json:"job_order"` // Preserve execution order
 	StartedAt    time.Time      `json:"started_at"`
 	CompletedAt  *time.Time     `json:"completed_at,omitempty"`
 	mu           sync.RWMutex
@@ -77,10 +86,46 @@ func NewServer() (*Server, error) {
 
 // ParseWorkflow parses a YAML workflow file
 func (s *Server) ParseWorkflow(data []byte) (*Workflow, error) {
+	// First, parse the raw YAML to preserve key order
+	var rawMap map[string]interface{}
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	if err := decoder.Decode(&rawMap); err != nil {
+		return nil, fmt.Errorf("failed to parse workflow: %w", err)
+	}
+
+	// Now parse into struct
 	var wf Workflow
 	if err := yaml.Unmarshal(data, &wf); err != nil {
 		return nil, fmt.Errorf("failed to parse workflow: %w", err)
 	}
+
+	// Extract job order from raw YAML (preserves insertion order)
+	if jobsMap, ok := rawMap["jobs"].(map[string]interface{}); ok {
+		wf.JobOrder = make([]string, 0, len(jobsMap))
+		// In Go 1.12+, map iteration order is randomized but we can use
+		// yaml.v3 which preserves order
+		var orderedYAML struct {
+			Jobs yaml.Node `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &orderedYAML); err == nil {
+			// Extract keys in order from yaml.Node
+			if orderedYAML.Jobs.Kind == yaml.MappingNode {
+				for i := 0; i < len(orderedYAML.Jobs.Content); i += 2 {
+					if orderedYAML.Jobs.Content[i].Value != "" {
+						wf.JobOrder = append(wf.JobOrder, orderedYAML.Jobs.Content[i].Value)
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback: if JobOrder is still empty, use map keys (will be random)
+	if len(wf.JobOrder) == 0 {
+		for jobName := range wf.Jobs {
+			wf.JobOrder = append(wf.JobOrder, jobName)
+		}
+	}
+
 	return &wf, nil
 }
 
@@ -93,6 +138,7 @@ func (s *Server) ExecuteWorkflow(ctx context.Context, wf *Workflow) (*WorkflowRu
 		WorkflowName: wf.Name,
 		Status:       "running",
 		Jobs:         make(map[string]Job),
+		JobOrder:     wf.JobOrder, // Preserve YAML order
 		StartedAt:    time.Now(),
 	}
 
@@ -100,7 +146,7 @@ func (s *Server) ExecuteWorkflow(ctx context.Context, wf *Workflow) (*WorkflowRu
 	s.workflowRuns[runID] = run
 	s.mu.Unlock()
 
-	// Execute jobs
+	// Execute jobs in order
 	go func() {
 		defer func() {
 			now := time.Now()
@@ -110,18 +156,33 @@ func (s *Server) ExecuteWorkflow(ctx context.Context, wf *Workflow) (*WorkflowRu
 		}()
 
 		allSuccess := true
-		for jobName, job := range wf.Jobs {
+		// Use preserved job order from YAML
+		jobOrder := wf.JobOrder
+		if len(jobOrder) == 0 {
+			// Fallback to map keys if order not preserved
+			for name := range wf.Jobs {
+				jobOrder = append(jobOrder, name)
+			}
+		}
+
+		// Execute jobs sequentially in YAML order
+		for _, jobName := range jobOrder {
+			job := wf.Jobs[jobName]
 			log.Printf("Starting job: %s", jobName)
 
+			jobStartTime := time.Now()
 			job.Status = "running"
+			job.StartedAt = jobStartTime
 			run.mu.Lock()
 			run.Jobs[jobName] = job
 			run.mu.Unlock()
 
 			output, err := s.executeJob(ctx, jobName, job)
 
+			jobEndTime := time.Now()
 			run.mu.Lock()
 			job.Output = output
+			job.EndedAt = &jobEndTime
 			if err != nil {
 				job.Status = "failed"
 				allSuccess = false
@@ -158,11 +219,13 @@ func (s *Server) executeJob(ctx context.Context, jobName string, job Job) (strin
 		image = "alpine:latest"
 	}
 
-	// Combine all steps into a single script
+	// Build script with step tracking
 	script := "#!/bin/sh\nset -e\n"
-	for _, step := range job.Steps {
-		script += fmt.Sprintf("echo '=== %s ==='\n", step.Name)
+	for i, step := range job.Steps {
+		script += fmt.Sprintf("\n# Step %d: %s\n", i+1, step.Name)
+		script += fmt.Sprintf("echo '=== [' $(date '+%%Y-%%m-%%d %%H:%%M:%%S') '] Starting: %s ==='\n", step.Name)
 		script += step.Run + "\n"
+		script += fmt.Sprintf("echo '=== [' $(date '+%%Y-%%m-%%d %%H:%%M:%%S') '] Completed: %s ==='\n", step.Name)
 	}
 
 	// Pull image if not present
@@ -353,13 +416,18 @@ func main() {
 		port = "8080"
 	}
 
+	const banner = `
+  ____             _                   
+ / ___| __ _ _ __ | |_ _ __ _   _ 
+| |  _ / _' | '_ \| __| '__| | | |
+| |_| | (_| | | | | |_| |  | |_| |
+ \____|\__,_|_| |_|\__|_|   \__, |
+                            |___/ `
+
 	log.Println("========================================")
-	log.Println("   _____ _____ _____ _______ ______     __")
-	log.Println("  / ____|  __ \\|  __ \\__   __|  _ \\ \\   / /")
-	log.Println(" | |  __| |__) | |__) | | |  | |_) \\ \\_/ / ")
-	log.Println(" | | |_ |  _  /|  ___/  | |  |  _ < \\   /  ")
-	log.Println(" | |__| | | \\ \\| |      | |  | |_) | | |   ")
-	log.Println("  \\_____|_|  \\_\\_|      |_|  |____/  |_|   ")
+
+	log.Println("========================================")
+	log.Println(banner)
 	log.Println("")
 	log.Println("  Gantry CI/CD Platform")
 	log.Println("========================================")

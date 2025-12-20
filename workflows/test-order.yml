@@ -1,0 +1,72 @@
+# test-order.yml
+# This workflow clearly shows execution order with numbered jobs
+
+name: Test Sequential Order
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  job-1-first:
+    runs-on: alpine
+    steps:
+      - name: Execute first job
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔵 JOB 1 - FIRST"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This should execute FIRST"
+          sleep 1
+          echo "✓ Job 1 complete"
+          
+  job-2-second:
+    runs-on: alpine
+    steps:
+      - name: Execute second job
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🟢 JOB 2 - SECOND"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This should execute SECOND"
+          sleep 1
+          echo "✓ Job 2 complete"
+          
+  job-3-third:
+    runs-on: alpine
+    steps:
+      - name: Execute third job
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🟡 JOB 3 - THIRD"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This should execute THIRD"
+          sleep 1
+          echo "✓ Job 3 complete"
+          
+  job-4-fourth:
+    runs-on: alpine
+    steps:
+      - name: Execute fourth job
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔴 JOB 4 - FOURTH"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This should execute FOURTH"
+          sleep 1
+          echo "✓ Job 4 complete"
+          
+  job-5-fifth:
+    runs-on: alpine
+    steps:
+      - name: Execute fifth job
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🟣 JOB 5 - FIFTH (FINAL)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "This should execute FIFTH (LAST)"
+          sleep 1
+          echo "✓ Job 5 complete"
+          echo ""
+          echo "If you see jobs 1→2→3→4→5 in UI, order is FIXED! ✅"
