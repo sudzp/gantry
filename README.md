@@ -7,6 +7,8 @@
 [![Docker](https://img.shields.io/badge/Docker-Required-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+
+
 ---
 
 ## 🎯 What is Gantry?
@@ -32,25 +34,18 @@ Gantry is a lightweight CI/CD platform that brings the power of GitHub Actions t
 ### Installation
 
 ```bash
-# Clone or create project directory
-mkdir gantry && cd gantry
+# Clone the project 
+git clone https://github.com/sudzp/gantry.git
 
 # Backend setup
-mkdir backend && cd backend
-go mod init gantry
-go get github.com/gorilla/mux github.com/docker/docker/client gopkg.in/yaml.v3
-
-# Copy the main.go from artifacts
+cd backend
 # Start the server
 go run main.go
 
 # Frontend setup (in new terminal)
-cd ../
-npx create-react-app frontend
-cd frontend
-npm install lucide-react
+cd ../frontend
 
-# Copy the App.jsx from artifacts to src/App.js
+npm install 
 # Start the UI
 npm start
 ```
