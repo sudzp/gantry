@@ -1,13 +1,13 @@
-import React from 'react';
-import { RefreshCw, CheckCircle, XCircle, Clock, Loader } from 'lucide-react';
+import React from "react";
+import { RefreshCw, CheckCircle, XCircle, Clock, Loader } from "lucide-react";
 
 const getStatusIcon = (status) => {
   switch (status) {
-    case 'success':
+    case "success":
       return <CheckCircle className="w-5 h-5 text-green-500" />;
-    case 'failed':
+    case "failed":
       return <XCircle className="w-5 h-5 text-red-500" />;
-    case 'running':
+    case "running":
       return <Loader className="w-5 h-5 text-blue-500 animate-spin" />;
     default:
       return <Clock className="w-5 h-5 text-gray-400" />;
@@ -16,14 +16,14 @@ const getStatusIcon = (status) => {
 
 const getStatusColor = (status) => {
   switch (status) {
-    case 'success':
-      return 'bg-green-100 text-green-800';
-    case 'failed':
-      return 'bg-red-100 text-red-800';
-    case 'running':
-      return 'bg-blue-100 text-blue-800';
+    case "success":
+      return "bg-green-100 text-green-800";
+    case "failed":
+      return "bg-red-100 text-red-800";
+    case "running":
+      return "bg-blue-100 text-blue-800";
     default:
-      return 'bg-gray-100 text-gray-800';
+      return "bg-gray-100 text-gray-800";
   }
 };
 
@@ -61,13 +61,16 @@ export default function RunList({ runs, onSelectRun, onRefresh }) {
                     <p className="text-sm text-gray-500">{run.id}</p>
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(run.status)}`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(run.status)}`}
+                >
                   {run.status}
                 </span>
               </div>
               <div className="text-xs text-gray-500">
                 Started: {new Date(run.started_at).toLocaleString()}
-                {run.completed_at && ` • Completed: ${new Date(run.completed_at).toLocaleString()}`}
+                {run.completed_at &&
+                  ` • Completed: ${new Date(run.completed_at).toLocaleString()}`}
               </div>
             </div>
           ))

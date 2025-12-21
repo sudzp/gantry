@@ -1,0 +1,60 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  # Ensures we don't fail just because of environment differences
+  modules-download-mode: readonly 
+
+linters-settings:
+  govet:
+    # check-shadowing is now part of the 'shadow' analyzer
+    enable-all: true
+    disable:
+      - fieldalignment # Often too noisy for web projects
+  gocyclo:
+    min-complexity: 15
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  misspell:
+    locale: US
+  lll:
+    line-length: 120
+  # goimports is now a formatter; usually handled by IDE, 
+  # but here is the config if you keep it enabled
+  goimports:
+    local-prefixes: gantry
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - errcheck
+    - goconst
+    - gocritic
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - unconvert
+    - unused
+    - revive
+    # Note: goimports is excluded here because it often causes 
+    # the "is a formatter" error in v2.x unless configured as a specific tool.
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - gosec

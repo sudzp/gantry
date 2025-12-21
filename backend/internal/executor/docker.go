@@ -9,8 +9,8 @@ import (
 
 	"gantry/internal/models"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
 
@@ -37,9 +37,9 @@ func (e *DockerExecutor) Execute(ctx context.Context, jobName string, job models
 	// Create separate timeouts for each operation
 
 	// Select image based on runs-on
-	image := "ubuntu:latest"
+	imageName := "ubuntu:latest"
 	if job.RunsOn == "alpine" {
-		image = "alpine:latest"
+		imageName = "alpine:latest"
 	}
 
 	// Build script with step tracking and timestamps
@@ -52,11 +52,11 @@ func (e *DockerExecutor) Execute(ctx context.Context, jobName string, job models
 	}
 
 	// Pull image with separate context and timeout
-	log.Printf("Pulling image %s...", image)
+	log.Printf("Pulling image %s...", imageName)
 	pullCtx, pullCancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer pullCancel()
 
-	reader, err := e.client.ImagePull(pullCtx, image, types.ImagePullOptions{})
+	reader, err := e.client.ImagePull(pullCtx, imageName, image.PullOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to pull image: %w", err)
 	}
@@ -66,14 +66,14 @@ func (e *DockerExecutor) Execute(ctx context.Context, jobName string, job models
 	if err != nil {
 		return "", fmt.Errorf("failed to pull image: %w", err)
 	}
-	log.Printf("Image %s pulled successfully", image)
+	log.Printf("Image %s pulled successfully", imageName)
 
 	// Create container with separate context
 	createCtx, createCancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer createCancel()
 
 	resp, err := e.client.ContainerCreate(createCtx, &container.Config{
-		Image: image,
+		Image: imageName,
 		Cmd:   []string{"/bin/sh", "-c", script},
 	}, nil, nil, nil, "")
 	if err != nil {
@@ -84,7 +84,7 @@ func (e *DockerExecutor) Execute(ctx context.Context, jobName string, job models
 	startCtx, startCancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer startCancel()
 
-	if err := e.client.ContainerStart(startCtx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := e.client.ContainerStart(startCtx, resp.ID, container.StartOptions{}); err != nil {
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
 
@@ -118,7 +118,7 @@ func (e *DockerExecutor) getContainerLogs(containerID string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	out, err := e.client.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{
+	out, err := e.client.ContainerLogs(ctx, containerID, container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	})
@@ -136,7 +136,7 @@ func (e *DockerExecutor) cleanupContainer(containerID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	e.client.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{
+	e.client.ContainerRemove(ctx, containerID, container.RemoveOptions{
 		Force: true,
 	})
 }
