@@ -32,10 +32,11 @@ jobs:
         run: go vet ./...
       
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci-lint/action-golangci-lint@v2
         with:
-          version: latest
+          version: v2.7.2
           working-directory: ./backend
+          args: --out-format=colored-line-number
 
   backend-test:
     name: Backend Tests
