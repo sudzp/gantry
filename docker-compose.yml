@@ -1,20 +1,31 @@
 version: '3.8'
 
 services:
+  mongodb:
+    image: mongo:7
+    container_name: gantry-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - gantry-data:/data/db
+
   backend:
     build: ./backend
+    depends_on:
+      - mongodb
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - PORT=8080
-    restart: unless-stopped
 
   frontend:
     build: ./frontend
-    ports:
-      - "3000:80"
     depends_on:
       - backend
-    restart: unless-stopped
+    ports:
+      - "3000:80"
+
+volumes:
+  gantry-data:

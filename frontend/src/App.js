@@ -85,6 +85,7 @@ function App() {
     try {
       const res = await fetch(`${API_URL}/runs/${runId}`);
       const data = await res.json();
+      console.log('Run details:', data); // Debug log
       setSelectedRun(data);
     } catch (err) {
       console.error('Failed to fetch run details:', err);

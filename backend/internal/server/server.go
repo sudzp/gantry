@@ -1,0 +1,221 @@
+package server
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"gantry/internal/executor"
+	"gantry/internal/models"
+	"gantry/internal/parser"
+	"gantry/internal/storage"
+
+	"github.com/joho/godotenv"
+)
+
+// Config holds server configuration
+type Config struct {
+	StorageType string // "memory" or "mongodb"
+	MongoURI    string
+	MongoDB     string
+}
+
+// Server coordinates all components
+type Server struct {
+	storage  storage.Storage
+	executor executor.Executor
+	parser   *parser.Parser
+}
+
+// NewServer creates a new server instance
+func NewServer(cfg *Config) (*Server, error) {
+	// Initialize storage based on configuration
+	var store storage.Storage
+	var err error
+
+	log.Println(cfg.StorageType)
+
+	if cfg.StorageType == "mongodb" {
+		log.Printf("Initializing MongoDB storage: %s/%s", cfg.MongoURI, cfg.MongoDB)
+		store, err = storage.NewMongoStorage(cfg.MongoURI, cfg.MongoDB)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create MongoDB storage: %w", err)
+		}
+		log.Println("✓ MongoDB connected successfully")
+	} else {
+		log.Println("Using in-memory storage")
+		store = storage.NewMemoryStorage()
+	}
+
+	// Initialize executor
+	exec, err := executor.NewDockerExecutor()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create executor: %w", err)
+	}
+
+	// Initialize parser
+	p := parser.NewParser()
+
+	return &Server{
+		storage:  store,
+		executor: exec,
+		parser:   p,
+	}, nil
+}
+
+// NewServerFromEnv creates a server from environment variables
+func NewServerFromEnv() (*Server, error) {
+	_ = godotenv.Load() // Loads the .env file automatically
+
+	cfg := &Config{
+		StorageType: getEnv("STORAGE_TYPE", "memory"), // "memory" or "mongodb"
+		MongoURI:    getEnv("MONGO_URI", "mongodb://localhost:27017"),
+		MongoDB:     getEnv("MONGO_DATABASE", "gantry"),
+	}
+
+	log.Println(cfg.StorageType)
+
+	return NewServer(cfg)
+}
+
+func getEnv(key, defaultValue string) string {
+
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// ParseAndSaveWorkflow parses and saves a workflow
+func (s *Server) ParseAndSaveWorkflow(data []byte) (*models.Workflow, error) {
+	wf, err := s.parser.Parse(data)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.parser.Validate(wf); err != nil {
+		return nil, err
+	}
+
+	if err := s.storage.SaveWorkflow(wf); err != nil {
+		return nil, err
+	}
+
+	return wf, nil
+}
+
+// ListWorkflows returns all workflows
+func (s *Server) ListWorkflows() ([]*models.Workflow, error) {
+	return s.storage.ListWorkflows()
+}
+
+// TriggerWorkflow triggers a workflow execution
+func (s *Server) TriggerWorkflow(ctx context.Context, name string) (*models.WorkflowRun, error) {
+	wf, err := s.storage.GetWorkflow(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.executeWorkflow(ctx, wf)
+}
+
+// GetRun retrieves a workflow run
+func (s *Server) GetRun(id string) (*models.WorkflowRun, error) {
+	return s.storage.GetRun(id)
+}
+
+// ListRuns returns all workflow runs
+func (s *Server) ListRuns() ([]*models.WorkflowRun, error) {
+	return s.storage.ListRuns()
+}
+
+// executeWorkflow executes a workflow
+func (s *Server) executeWorkflow(ctx context.Context, wf *models.Workflow) (*models.WorkflowRun, error) {
+	runID := fmt.Sprintf("run-%d", time.Now().Unix())
+
+	run := &models.WorkflowRun{
+		ID:           runID,
+		WorkflowName: wf.Name,
+		Status:       "running",
+		Jobs:         make(map[string]models.Job),
+		JobOrder:     wf.JobOrder,
+		StartedAt:    time.Now(),
+	}
+
+	if err := s.storage.SaveRun(run); err != nil {
+		return nil, err
+	}
+
+	// Execute jobs asynchronously
+	go s.runJobs(ctx, run, wf)
+
+	return run, nil
+}
+
+// runJobs executes all jobs in a workflow
+func (s *Server) runJobs(ctx context.Context, run *models.WorkflowRun, wf *models.Workflow) {
+	defer func() {
+		run.Complete()
+		s.storage.UpdateRun(run)
+	}()
+
+	// Create a new background context with longer timeout for job execution
+	// Don't use the HTTP request context as it may timeout
+	jobCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+
+	allSuccess := true
+	jobOrder := wf.JobOrder
+	if len(jobOrder) == 0 {
+		for name := range wf.Jobs {
+			jobOrder = append(jobOrder, name)
+		}
+	}
+
+	for _, jobName := range jobOrder {
+		job := wf.Jobs[jobName]
+		log.Printf("Starting job: %s", jobName)
+
+		jobStartTime := time.Now()
+		job.Status = "running"
+		job.StartedAt = jobStartTime
+		run.UpdateJob(jobName, job)
+		s.storage.UpdateRun(run)
+
+		output, err := s.executor.Execute(jobCtx, jobName, job)
+
+		jobEndTime := time.Now()
+		job.Output = output
+		job.EndedAt = &jobEndTime
+
+		if err != nil {
+			job.Status = "failed"
+			allSuccess = false
+			log.Printf("Job %s failed: %v", jobName, err)
+		} else {
+			job.Status = "success"
+			log.Printf("Job %s completed successfully", jobName)
+		}
+
+		run.UpdateJob(jobName, job)
+		s.storage.UpdateRun(run)
+
+		if err != nil {
+			break // Stop on first failure
+		}
+	}
+
+	if allSuccess {
+		run.SetStatus("success")
+	} else {
+		run.SetStatus("failed")
+	}
+	s.storage.UpdateRun(run)
+}
+
+// Cleanup performs cleanup operations
+func (s *Server) Cleanup() error {
+	return s.executor.Cleanup()
+}
