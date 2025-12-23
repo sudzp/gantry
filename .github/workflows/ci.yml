@@ -36,7 +36,7 @@ jobs:
         with:
           version: v2.7.2
           working-directory: ./backend
-          args: --out-format=colored-line-number --timeout=5m
+          args: --timeout=5m
 
   backend-test:
     name: Backend Tests
