@@ -89,7 +89,8 @@ func (s *MongoStorage) ListWorkflows() ([]*models.Workflow, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list workflows: %w", err)
 	}
-	defer cursor.Close(ctx)
+
+	defer func() { _ = cursor.Close(ctx) }()
 
 	var workflows []*models.Workflow
 	if err := cursor.All(ctx, &workflows); err != nil {
@@ -163,7 +164,7 @@ func (s *MongoStorage) ListRuns() ([]*models.WorkflowRun, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list runs: %w", err)
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	var runs []*models.WorkflowRun
 	if err := cursor.All(ctx, &runs); err != nil {

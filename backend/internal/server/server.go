@@ -155,10 +155,13 @@ func (s *Server) executeWorkflow(ctx context.Context, wf *models.Workflow) (*mod
 }
 
 // runJobs executes all jobs in a workflow
-func (s *Server) runJobs(ctx context.Context, run *models.WorkflowRun, wf *models.Workflow) {
+func (s *Server) runJobs(_ context.Context, run *models.WorkflowRun, wf *models.Workflow) {
 	defer func() {
 		run.Complete()
-		s.storage.UpdateRun(run)
+
+		if err := s.storage.UpdateRun(run); err != nil {
+			log.Printf("ERROR: failed to update run status in storage: %v", err)
+		}
 	}()
 
 	// Create a new background context with longer timeout for job execution
@@ -182,7 +185,10 @@ func (s *Server) runJobs(ctx context.Context, run *models.WorkflowRun, wf *model
 		job.Status = "running"
 		job.StartedAt = jobStartTime
 		run.UpdateJob(jobName, job)
-		s.storage.UpdateRun(run)
+
+		if err := s.storage.UpdateRun(run); err != nil {
+			log.Printf("ERROR: failed to update run status in storage: %v", err)
+		}
 
 		output, err := s.executor.Execute(jobCtx, jobName, job)
 
@@ -200,7 +206,9 @@ func (s *Server) runJobs(ctx context.Context, run *models.WorkflowRun, wf *model
 		}
 
 		run.UpdateJob(jobName, job)
-		s.storage.UpdateRun(run)
+		if err := s.storage.UpdateRun(run); err != nil {
+			log.Printf("ERROR: failed to update run status in storage: %v", err)
+		}
 
 		if err != nil {
 			break // Stop on first failure
@@ -212,7 +220,10 @@ func (s *Server) runJobs(ctx context.Context, run *models.WorkflowRun, wf *model
 	} else {
 		run.SetStatus("failed")
 	}
-	s.storage.UpdateRun(run)
+
+	if err := s.storage.UpdateRun(run); err != nil {
+		log.Printf("ERROR: failed to update run status in storage: %v", err)
+	}
 }
 
 // Cleanup performs cleanup operations

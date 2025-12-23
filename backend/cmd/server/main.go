@@ -1,3 +1,5 @@
+// Package main is the entry point for the Gantry CI/CD server
+// Package main is the entry point for the Gantry CI/CD server
 package main
 
 import (
@@ -18,7 +20,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer srv.Cleanup()
+	defer func() { _ = srv.Cleanup() }()
 
 	// Setup API handlers
 	handler := api.NewHandler(srv)

@@ -50,8 +50,8 @@ func TestMemoryStorage_ListWorkflows(t *testing.T) {
 	wf1 := &models.Workflow{Name: "Workflow 1", Jobs: map[string]models.Job{}}
 	wf2 := &models.Workflow{Name: "Workflow 2", Jobs: map[string]models.Job{}}
 
-	store.SaveWorkflow(wf1)
-	store.SaveWorkflow(wf2)
+	_ = store.SaveWorkflow(wf1)
+	_ = store.SaveWorkflow(wf2)
 
 	workflows, err := store.ListWorkflows()
 	if err != nil {
@@ -67,7 +67,7 @@ func TestMemoryStorage_DeleteWorkflow(t *testing.T) {
 	store := NewMemoryStorage()
 
 	wf := &models.Workflow{Name: "Test", Jobs: map[string]models.Job{}}
-	store.SaveWorkflow(wf)
+	_ = store.SaveWorkflow(wf)
 
 	// Delete
 	err := store.DeleteWorkflow("Test")
@@ -130,7 +130,7 @@ func TestMemoryStorage_UpdateRun(t *testing.T) {
 		StartedAt:    time.Now(),
 	}
 
-	store.SaveRun(run)
+	_ = store.SaveRun(run)
 
 	// Update status
 	run.Status = "success"
@@ -152,8 +152,8 @@ func TestMemoryStorage_ListRuns(t *testing.T) {
 	run1 := &models.WorkflowRun{ID: "run-1", WorkflowName: "Test", Status: "success", Jobs: map[string]models.Job{}, StartedAt: time.Now()}
 	run2 := &models.WorkflowRun{ID: "run-2", WorkflowName: "Test", Status: "failed", Jobs: map[string]models.Job{}, StartedAt: time.Now()}
 
-	store.SaveRun(run1)
-	store.SaveRun(run2)
+	_ = store.SaveRun(run1)
+	_ = store.SaveRun(run2)
 
 	runs, err := store.ListRuns()
 	if err != nil {
@@ -176,7 +176,7 @@ func TestMemoryStorage_Concurrency(t *testing.T) {
 				Name: fmt.Sprintf("Workflow %d", id),
 				Jobs: map[string]models.Job{},
 			}
-			store.SaveWorkflow(wf)
+			_ = store.SaveWorkflow(wf)
 			done <- true
 		}(i)
 	}

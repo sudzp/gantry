@@ -32,7 +32,7 @@ func NewDockerExecutor() (*DockerExecutor, error) {
 }
 
 // Execute runs a job in a Docker container
-func (e *DockerExecutor) Execute(ctx context.Context, jobName string, job models.Job) (string, error) {
+func (e *DockerExecutor) Execute(ctx context.Context, _ string, job models.Job) (string, error) {
 	// Use background context for Docker operations to avoid premature cancellation
 	// Create separate timeouts for each operation
 
@@ -62,7 +62,7 @@ func (e *DockerExecutor) Execute(ctx context.Context, jobName string, job models
 	}
 	// Must read the response to completion
 	_, err = io.Copy(io.Discard, reader)
-	reader.Close()
+	_ = reader.Close()
 	if err != nil {
 		return "", fmt.Errorf("failed to pull image: %w", err)
 	}
@@ -125,7 +125,8 @@ func (e *DockerExecutor) getContainerLogs(containerID string) string {
 	if err != nil {
 		return fmt.Sprintf("Failed to get logs: %v", err)
 	}
-	defer out.Close()
+
+	defer func() { _ = out.Close() }()
 
 	logs, _ := io.ReadAll(out)
 	return string(logs)
@@ -136,7 +137,7 @@ func (e *DockerExecutor) cleanupContainer(containerID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	e.client.ContainerRemove(ctx, containerID, container.RemoveOptions{
+	_ = e.client.ContainerRemove(ctx, containerID, container.RemoveOptions{
 		Force: true,
 	})
 }
