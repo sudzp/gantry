@@ -162,9 +162,10 @@ func (s *Server) GetWorkflowStats(workflowName string) (map[string]interface{}, 
 	var totalDuration int64
 
 	for _, run := range workflowRuns {
-		if run.Status == "success" {
+		switch run.Status {
+		case "success":
 			successCount++
-		} else if run.Status == "failed" {
+		case "failed":
 			failureCount++
 		}
 

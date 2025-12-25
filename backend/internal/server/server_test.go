@@ -9,6 +9,11 @@ import (
 	"gantry/internal/storage"
 )
 
+const (
+	successStatus = "success"
+	failedStatus  = "failed"
+)
+
 func TestServer_ParseAndSaveWorkflow(t *testing.T) {
 	srv := &Server{
 		storage: storage.NewMemoryStorage(),
@@ -60,7 +65,9 @@ func TestServer_ListWorkflows(t *testing.T) {
 			Name: "Workflow" + string(rune(48+i)),
 			Jobs: map[string]models.Job{},
 		}
-		srv.storage.SaveWorkflow(wf)
+		if err := srv.storage.SaveWorkflow(wf); err != nil {
+			t.Fatalf("Failed to save workflow: %v", err)
+		}
 	}
 
 	workflows, err := srv.ListWorkflows()
@@ -92,7 +99,9 @@ func TestServer_TriggerWorkflow(t *testing.T) {
 		JobOrder: []string{"test"},
 	}
 
-	srv.storage.SaveWorkflow(wf)
+	if err := srv.storage.SaveWorkflow(wf); err != nil {
+		t.Fatalf("Failed to save workflow: %v", err)
+	}
 
 	// Note: This will fail without Docker, but we can test the run creation
 	run, err := srv.TriggerWorkflow(context.Background(), "Test")
@@ -120,13 +129,15 @@ func TestServer_GetWorkflowStats(t *testing.T) {
 		Name: "Test",
 		Jobs: map[string]models.Job{},
 	}
-	srv.storage.SaveWorkflow(wf)
+	if err := srv.storage.SaveWorkflow(wf); err != nil {
+		t.Fatalf("Failed to save workflow: %v", err)
+	}
 
 	// Save runs
 	for i := 0; i < 5; i++ {
-		status := "success"
+		status := successStatus
 		if i == 4 {
-			status = "failed"
+			status = failedStatus
 		}
 		run := &models.WorkflowRun{
 			ID:           "run-" + string(rune(48+i)),
@@ -134,7 +145,9 @@ func TestServer_GetWorkflowStats(t *testing.T) {
 			Status:       status,
 			Jobs:         make(map[string]models.Job),
 		}
-		srv.storage.SaveRun(run)
+		if err := srv.storage.SaveRun(run); err != nil {
+			t.Fatalf("Failed to save run: %v", err)
+		}
 	}
 
 	stats, err := srv.GetWorkflowStats("Test")
@@ -171,27 +184,33 @@ func TestServer_GetWorkflowRuns(t *testing.T) {
 		Name: "Test",
 		Jobs: map[string]models.Job{},
 	}
-	srv.storage.SaveWorkflow(wf)
+	if err := srv.storage.SaveWorkflow(wf); err != nil {
+		t.Fatalf("Failed to save workflow: %v", err)
+	}
 
 	// Save runs for this workflow and another
 	for i := 0; i < 3; i++ {
 		run := &models.WorkflowRun{
 			ID:           "test-run-" + string(rune(48+i)),
 			WorkflowName: "Test",
-			Status:       "success",
+			Status:       successStatus,
 			Jobs:         make(map[string]models.Job),
 		}
-		srv.storage.SaveRun(run)
+		if err := srv.storage.SaveRun(run); err != nil {
+			t.Fatalf("Failed to save run: %v", err)
+		}
 	}
 
 	for i := 0; i < 2; i++ {
 		run := &models.WorkflowRun{
 			ID:           "other-run-" + string(rune(48+i)),
 			WorkflowName: "Other",
-			Status:       "success",
+			Status:       successStatus,
 			Jobs:         make(map[string]models.Job),
 		}
-		srv.storage.SaveRun(run)
+		if err := srv.storage.SaveRun(run); err != nil {
+			t.Fatalf("Failed to save run: %v", err)
+		}
 	}
 
 	runs, err := srv.GetWorkflowRuns("Test")
@@ -221,16 +240,20 @@ func TestServer_DeleteWorkflow(t *testing.T) {
 		Name: "Test",
 		Jobs: map[string]models.Job{},
 	}
-	srv.storage.SaveWorkflow(wf)
+	if err := srv.storage.SaveWorkflow(wf); err != nil {
+		t.Fatalf("Failed to save workflow: %v", err)
+	}
 
 	// Save runs for this workflow
 	run := &models.WorkflowRun{
 		ID:           "run-123",
 		WorkflowName: "Test",
-		Status:       "success",
+		Status:       successStatus,
 		Jobs:         make(map[string]models.Job),
 	}
-	srv.storage.SaveRun(run)
+	if err := srv.storage.SaveRun(run); err != nil {
+		t.Fatalf("Failed to save run: %v", err)
+	}
 
 	// Delete workflow (should cascade delete runs)
 	err := srv.DeleteWorkflow("Test")
