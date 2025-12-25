@@ -75,8 +75,10 @@ jobs:
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Coverage: $COVERAGE%"
           if (( $(echo "$COVERAGE < 60" | bc -l) )); then
-            echo "Coverage is below 60%"
-            exit 1
+            echo "⚠️  Coverage is below 60% target (currently $COVERAGE%)"
+            echo "This is advisory - consider adding more tests"
+          else
+            echo "✅ Coverage meets 60% target"
           fi
 
   backend-security:

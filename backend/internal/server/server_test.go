@@ -272,3 +272,78 @@ func TestServer_DeleteWorkflow(t *testing.T) {
 		t.Errorf("Runs should be deleted with cascade, but found %d", len(runs))
 	}
 }
+
+func TestServer_GetRun(t *testing.T) {
+	srv := &Server{
+		storage: storage.NewMemoryStorage(),
+		parser:  parser.NewParser(),
+	}
+
+	// Save a run
+	run := &models.WorkflowRun{
+		ID:           "run-123",
+		WorkflowName: "Test",
+		Status:       successStatus,
+		Jobs:         make(map[string]models.Job),
+	}
+	if err := srv.storage.SaveRun(run); err != nil {
+		t.Fatalf("Failed to save run: %v", err)
+	}
+
+	// Get the run
+	retrieved, err := srv.GetRun("run-123")
+	if err != nil {
+		t.Fatalf("Failed to get run: %v", err)
+	}
+
+	if retrieved.ID != "run-123" {
+		t.Errorf("Expected run ID 'run-123', got '%s'", retrieved.ID)
+	}
+
+	if retrieved.WorkflowName != "Test" {
+		t.Errorf("Expected workflow name 'Test', got '%s'", retrieved.WorkflowName)
+	}
+}
+
+func TestServer_GetRun_NotFound(t *testing.T) {
+	srv := &Server{
+		storage: storage.NewMemoryStorage(),
+		parser:  parser.NewParser(),
+	}
+
+	// Try to get non-existent run
+	_, err := srv.GetRun("non-existent")
+	if err == nil {
+		t.Error("Expected error for non-existent run, got nil")
+	}
+}
+
+func TestServer_ListRuns(t *testing.T) {
+	srv := &Server{
+		storage: storage.NewMemoryStorage(),
+		parser:  parser.NewParser(),
+	}
+
+	// Save multiple runs
+	for i := 0; i < 3; i++ {
+		run := &models.WorkflowRun{
+			ID:           "run-" + string(rune(48+i)),
+			WorkflowName: "Test",
+			Status:       successStatus,
+			Jobs:         make(map[string]models.Job),
+		}
+		if err := srv.storage.SaveRun(run); err != nil {
+			t.Fatalf("Failed to save run: %v", err)
+		}
+	}
+
+	// List runs
+	runs, err := srv.ListRuns()
+	if err != nil {
+		t.Fatalf("Failed to list runs: %v", err)
+	}
+
+	if len(runs) != 3 {
+		t.Errorf("Expected 3 runs, got %d", len(runs))
+	}
+}
