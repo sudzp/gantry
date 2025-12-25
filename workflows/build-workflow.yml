@@ -1,0 +1,55 @@
+name: Build  Pipeline 
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # 1. LINT
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Linting Code
+        run: echo "Running Linter... Code quality check passed!"
+
+  # 2. UNIT TEST
+  unit-test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Running Unit Tests
+        run: echo "Running Unit Tests... 100% passed!"
+
+  # 3. BUILD
+  build:
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Building Binary
+        run: echo "Compiling Gantry binary for Linux/AMD64..."
+
+  # 4. DOCKERISE
+  dockerise:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Building Docker Image
+        run: echo "Docker build -t gantry-engine:latest . complete!"
+
+  # 5. PACKAGE
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Packaging Release
+        run: echo "Creating gantry-v1.0.tar.gz release package..."
+
+  # 6. DEPLOY
+  deploy:
+    needs: [dockerise, package]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploying to Production
+        run: echo "Gantry successfully deployed to production environment!"

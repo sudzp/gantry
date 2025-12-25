@@ -1,0 +1,58 @@
+# ============================================
+# 3. SEQUENTIAL JOBS EXAMPLE
+# File: sequential-pipeline.yml
+# Jobs run in ORDER: lint -> test -> build -> deploy
+# ============================================
+name: Sequential Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu
+    steps:
+      - name: Lint code
+        run: |
+          echo "=== STEP 1: LINTING ==="
+          echo "Running code linter..."
+          sleep 2
+          echo "✓ Linting passed"
+          
+  test:
+    runs-on: ubuntu
+    steps:
+      - name: Run unit tests
+        run: |
+          echo "=== STEP 2: TESTING ==="
+          echo "Running unit tests..."
+          sleep 2
+          echo "✓ 150 tests passed"
+          
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests..."
+          sleep 2
+          echo "✓ 45 integration tests passed"
+          
+  build:
+    runs-on: alpine
+    steps:
+      - name: Build application
+        run: |
+          echo "=== STEP 3: BUILDING ==="
+          echo "Compiling application..."
+          sleep 2
+          echo "✓ Build successful"
+          
+  deploy:
+    runs-on: alpine
+    steps:
+      - name: Deploy to production
+        run: |
+          echo "=== STEP 4: DEPLOYING ==="
+          echo "Deploying to production..."
+          sleep 2
+          echo "✓ Deployed to https://example.com"

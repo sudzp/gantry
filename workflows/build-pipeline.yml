@@ -1,0 +1,52 @@
+# ============================================
+# 4. BUILD PIPELINE (Triggers Test Pipeline)
+# File: build-pipeline.yml
+# This pipeline builds and then triggers testing
+# ============================================
+name: Build Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  checkout:
+    runs-on: alpine
+    steps:
+      - name: Checkout code
+        run: |
+          echo "=== CHECKOUT ==="
+          echo "Cloning repository..."
+          echo "✓ Code checked out"
+          
+  compile:
+    runs-on: ubuntu
+    steps:
+      - name: Compile source
+        run: |
+          echo "=== COMPILE ==="
+          echo "Compiling source code..."
+          sleep 2
+          echo "✓ Compilation successful"
+          
+  package:
+    runs-on: alpine
+    steps:
+      - name: Create artifacts
+        run: |
+          echo "=== PACKAGE ==="
+          echo "Creating deployment package..."
+          echo "Package: myapp-v1.0.0.tar.gz"
+          echo "✓ Package created"
+          
+  notify:
+    runs-on: alpine
+    steps:
+      - name: Trigger test pipeline
+        run: |
+          echo "=== NOTIFY ==="
+          echo "Build completed successfully!"
+          echo "Triggering test pipeline..."
+          echo "→ You can manually trigger 'Test Pipeline' next"
+          echo "✓ Notification sent"

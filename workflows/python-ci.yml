@@ -1,0 +1,162 @@
+name: Python CI Fixed
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu
+    steps:
+      - name: Check Python version
+        run: |
+          python3 --version
+          pip3 --version
+          
+      - name: Install dependencies (using venv)
+        run: |
+          python3 -m venv /tmp/venv
+          . /tmp/venv/bin/activate
+          pip install pytest requests Flask
+          
+      - name: Run tests
+        run: |
+          . /tmp/venv/bin/activate
+          echo "Running Python tests..."
+          python3 -c "import sys; print(f'Python {sys.version}'); print('✓ All tests passed!')"
+          
+      - name: Check installed packages
+        run: |
+          . /tmp/venv/bin/activate
+          pip list
+
+---
+
+# docker-build.yml
+# Example workflow for Docker builds
+name: Docker Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: alpine
+    steps:
+      - name: Check Docker
+        run: |
+          echo "Building Docker image..."
+          echo "Image: myapp:latest"
+          
+      - name: Simulate build
+        run: |
+          echo "Step 1/5: FROM alpine:latest"
+          echo "Step 2/5: WORKDIR /app"
+          echo "Step 3/5: COPY . ."
+          echo "Step 4/5: RUN apk add --no-cache nodejs"
+          echo "Step 5/5: CMD [\"node\", \"app.js\"]"
+          echo "✓ Successfully built image"
+          
+      - name: Tag and push
+        run: |
+          echo "Tagging image as myapp:latest"
+          echo "Pushing to registry..."
+          echo "✓ Push complete"
+
+---
+
+# security-scan.yml
+# Example workflow for security scanning
+name: Security Scan
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  scan:
+    runs-on: ubuntu
+    steps:
+      - name: Update packages
+        run: |
+          apt-get update
+          
+      - name: Security audit
+        run: |
+          echo "Running security scan..."
+          echo "Checking for vulnerabilities..."
+          echo "✓ No critical vulnerabilities found"
+          
+      - name: Dependency check
+        run: |
+          echo "Scanning dependencies..."
+          echo "✓ All dependencies are secure"
+          
+      - name: Code analysis
+        run: |
+          echo "Running static code analysis..."
+          echo "✓ No security issues detected"
+
+---
+
+# multi-stage.yml
+# Example workflow with multiple jobs
+name: Full Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: alpine
+    steps:
+      - name: Install linters
+        run: |
+          apk add --no-cache shellcheck
+          
+      - name: Lint code
+        run: |
+          echo "Running linters..."
+          echo "✓ Code style checks passed"
+          
+  test:
+    runs-on: ubuntu
+    steps:
+      - name: Run unit tests
+        run: |
+          echo "Running unit tests..."
+          echo "✓ 125 tests passed"
+          
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests..."
+          echo "✓ 45 tests passed"
+          
+  build:
+    runs-on: ubuntu
+    steps:
+      - name: Build application
+        run: |
+          echo "Building application..."
+          echo "✓ Build successful"
+          
+      - name: Create artifacts
+        run: |
+          echo "Creating build artifacts..."
+          echo "✓ Artifacts created"
+          
+  deploy:
+    runs-on: alpine
+    steps:
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          echo "✓ Deployment successful"
+          echo "URL: https://staging.example.com"

@@ -1,0 +1,99 @@
+# ============================================
+# 6. FULL CI/CD PIPELINE
+# File: full-cicd.yml
+# Complete pipeline: build -> test -> deploy
+# ============================================
+name: Full CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  prepare:
+    runs-on: alpine
+    steps:
+      - name: Setup environment
+        run: |
+          echo "=== PHASE 1: PREPARE ==="
+          echo "Setting up environment..."
+          echo "✓ Environment ready"
+          
+  build:
+    runs-on: ubuntu
+    steps:
+      - name: Build application
+        run: |
+          echo "=== PHASE 2: BUILD ==="
+          echo "Building application..."
+          sleep 2
+          echo "✓ Build completed"
+          
+  test:
+    runs-on: ubuntu
+    steps:
+      - name: Run all tests
+        run: |
+          echo "=== PHASE 3: TEST ==="
+          echo "Running test suite..."
+          sleep 2
+          echo "✓ All tests passed"
+          
+  scan:
+    runs-on: ubuntu
+    steps:
+      - name: Security scan
+        run: |
+          echo "=== PHASE 4: SCAN ==="
+          echo "Running security scan..."
+          sleep 2
+          echo "✓ Security check passed"
+          
+  stage-deploy:
+    runs-on: alpine
+    steps:
+      - name: Deploy to staging
+        run: |
+          echo "=== PHASE 5: STAGING ==="
+          echo "Deploying to staging..."
+          sleep 2
+          echo "✓ Staging deployment complete"
+          echo "URL: https://staging.example.com"
+          
+  smoke-test:
+    runs-on: alpine
+    steps:
+      - name: Smoke tests
+        run: |
+          echo "=== PHASE 6: SMOKE TEST ==="
+          echo "Running smoke tests on staging..."
+          sleep 2
+          echo "✓ Smoke tests passed"
+          
+  prod-deploy:
+    runs-on: alpine
+    steps:
+      - name: Deploy to production
+        run: |
+          echo "=== PHASE 7: PRODUCTION ==="
+          echo "Deploying to production..."
+          sleep 2
+          echo "✓ Production deployment complete"
+          echo "URL: https://example.com"
+          
+  verify:
+    runs-on: alpine
+    steps:
+      - name: Verify deployment
+        run: |
+          echo "=== PHASE 8: VERIFY ==="
+          echo "Verifying production deployment..."
+          sleep 2
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🎉 DEPLOYMENT SUCCESSFUL!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Version: 1.0.0"
+          echo "Environment: Production"
+          echo "Status: Healthy"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

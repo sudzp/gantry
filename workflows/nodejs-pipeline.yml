@@ -1,0 +1,60 @@
+# ============================================
+# 7. NODE.JS PIPELINE
+# File: nodejs-pipeline.yml
+# ============================================
+name: Node.js Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  setup:
+    runs-on: ubuntu
+    steps:
+      - name: Install Node.js
+        run: |
+          echo "=== SETUP NODE.JS ==="
+          apt-get update
+          curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+          apt-get install -y nodejs
+          node --version
+          npm --version
+          echo "✓ Node.js installed"
+          
+  install:
+    runs-on: ubuntu
+    steps:
+      - name: Install dependencies
+        run: |
+          echo "=== INSTALL DEPENDENCIES ==="
+          echo "Installing npm packages..."
+          echo "✓ Dependencies installed"
+          
+  lint:
+    runs-on: ubuntu
+    steps:
+      - name: Lint code
+        run: |
+          echo "=== LINT ==="
+          echo "Running ESLint..."
+          echo "✓ No linting errors"
+          
+  test:
+    runs-on: ubuntu
+    steps:
+      - name: Run tests
+        run: |
+          echo "=== TEST ==="
+          echo "Running Jest tests..."
+          echo "✓ All tests passed"
+          
+  build:
+    runs-on: ubuntu
+    steps:
+      - name: Build for production
+        run: |
+          echo "=== BUILD ==="
+          echo "Building production bundle..."
+          echo "✓ Build complete"
