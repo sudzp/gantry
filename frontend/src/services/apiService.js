@@ -35,7 +35,7 @@ class ApiService {
     if (!response.ok) throw new Error("Failed to fetch runs");
     const data = await response.json();
     return (data || []).sort(
-      (a, b) => new Date(b.started_at) - new Date(a.started_at),
+      (a, b) => new Date(b.started_at) - new Date(a.started_at)
     );
   }
 

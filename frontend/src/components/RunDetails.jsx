@@ -1,31 +1,146 @@
-import React from "react";
-import { CheckCircle, XCircle, Clock, Loader } from "lucide-react";
+import React, { useState } from "react";
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Clock,
+  ChevronDown,
+  ChevronRight,
+  Calendar,
+  GitBranch,
+  User,
+} from "lucide-react";
 
 const getStatusIcon = (status) => {
   switch (status) {
     case "success":
-      return <CheckCircle className="w-5 h-5 text-green-500" />;
+      return <CheckCircle2 className="w-4 h-4 text-green-600" />;
     case "failed":
-      return <XCircle className="w-5 h-5 text-red-500" />;
+      return <XCircle className="w-4 h-4 text-red-600" />;
     case "running":
-      return <Loader className="w-5 h-5 text-blue-500 animate-spin" />;
+      return <Loader2 className="w-4 h-4 text-yellow-600 animate-spin" />;
     default:
-      return <Clock className="w-5 h-5 text-gray-400" />;
+      return <Clock className="w-4 h-4 text-gray-400" />;
   }
 };
 
 const getStatusColor = (status) => {
   switch (status) {
     case "success":
-      return "bg-green-100 text-green-800";
+      return "bg-green-50 text-green-700 border-green-200";
     case "failed":
-      return "bg-red-100 text-red-800";
+      return "bg-red-50 text-red-700 border-red-200";
     case "running":
-      return "bg-blue-100 text-blue-800";
+      return "bg-yellow-50 text-yellow-700 border-yellow-200";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-gray-50 text-gray-700 border-gray-200";
   }
 };
+
+function JobItem({ name, job }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  const duration =
+    job.started_at && job.ended_at
+      ? Math.round((new Date(job.ended_at) - new Date(job.started_at)) / 1000)
+      : null;
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      {/* Job Header */}
+      <div
+        className="px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+            {getStatusIcon(job.status)}
+            <span className="font-semibold text-gray-900">{name}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {duration !== null && (
+              <span className="text-sm text-gray-600">{duration}s</span>
+            )}
+            <span
+              className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getStatusColor(job.status)}`}
+            >
+              {job.status}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Job Details */}
+      {isExpanded && (
+        <div className="px-4 py-4 space-y-4">
+          {/* Timestamps */}
+          {(job.started_at || job.ended_at) && (
+            <div className="text-sm text-gray-600 space-y-1">
+              {job.started_at && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    Started: {new Date(job.started_at).toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {job.ended_at && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>Ended: {new Date(job.ended_at).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Steps */}
+          {job.steps && job.steps.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                Steps
+              </h4>
+              <div className="space-y-2">
+                {job.steps.map((step, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 text-sm text-gray-700 py-1"
+                  >
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                    {step.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Output Logs */}
+          {job.output && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                Build logs
+              </h4>
+              <div className="bg-gray-900 rounded-lg overflow-hidden">
+                <div className="px-4 py-2 border-b border-gray-700 flex items-center justify-between">
+                  <span className="text-xs text-gray-400 font-mono">
+                    Console output
+                  </span>
+                </div>
+                <pre className="px-4 py-3 text-sm text-gray-300 font-mono overflow-x-auto max-h-96">
+                  {job.output}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function RunDetails({ run }) {
   if (!run) return null;
@@ -38,83 +153,56 @@ export default function RunDetails({ run }) {
             .filter((j) => j.job)
         : Object.entries(run.jobs || {}).map(([name, job]) => ({ name, job }));
 
-    return jobsToRender.map(({ name, job }) => {
-      const duration =
-        job.started_at && job.ended_at
-          ? Math.round(
-              (new Date(job.ended_at) - new Date(job.started_at)) / 1000,
-            )
-          : null;
-
-      return (
-        <div key={name} className="border rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            {getStatusIcon(job.status)}
-            <h3 className="font-semibold">{name}</h3>
-            <span
-              className={`ml-auto px-2 py-1 rounded text-xs ${getStatusColor(job.status)}`}
-            >
-              {job.status}
-            </span>
-          </div>
-
-          {(job.started_at || duration) && (
-            <div className="text-xs text-gray-500 mb-3 space-y-1">
-              {job.started_at && (
-                <div>Started: {new Date(job.started_at).toLocaleString()}</div>
-              )}
-              {job.ended_at && (
-                <div>Ended: {new Date(job.ended_at).toLocaleString()}</div>
-              )}
-              {duration !== null && (
-                <div className="font-medium text-gray-700">
-                  Duration: {duration}s
-                </div>
-              )}
-            </div>
-          )}
-
-          {job.steps && job.steps.length > 0 && (
-            <div className="mb-3">
-              <p className="text-sm font-medium text-gray-700 mb-2">Steps:</p>
-              <ul className="space-y-1">
-                {job.steps.map((step, idx) => (
-                  <li key={idx} className="text-sm text-gray-600 pl-4">
-                    • {step.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {job.output && (
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Output:</p>
-              <pre className="bg-gray-900 text-green-400 p-3 rounded text-xs overflow-x-auto max-h-96">
-                {job.output}
-              </pre>
-            </div>
-          )}
-        </div>
-      );
-    });
+    return jobsToRender.map(({ name, job }) => (
+      <JobItem key={name} name={name} job={job} />
+    ));
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4">Run Details: {run.id}</h2>
-
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
+    <div className="space-y-6">
+      {/* Run Header */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-start gap-3 mb-4">
           {getStatusIcon(run.status)}
-          <span className="font-medium">Status: {run.status}</span>
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              {run.workflow_name}
+            </h2>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span className="flex items-center gap-1">
+                <GitBranch className="w-4 h-4" />
+                main
+              </span>
+              <span className="flex items-center gap-1">
+                <User className="w-4 h-4" />
+                system
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {new Date(run.started_at).toLocaleString()}
+              </span>
+            </div>
+          </div>
+          <span
+            className={`px-3 py-1.5 text-sm font-medium rounded-full border ${getStatusColor(run.status)}`}
+          >
+            {run.status}
+          </span>
         </div>
         <div className="text-sm text-gray-600">
-          Workflow: {run.workflow_name}
+          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+            #{run.id.slice(0, 7)}
+          </span>
         </div>
       </div>
 
-      <div className="space-y-4">{renderJobs()}</div>
+      {/* Jobs Section */}
+      <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-lg font-semibold text-gray-900">Jobs</h3>
+        </div>
+        <div className="p-6 space-y-4">{renderJobs()}</div>
+      </div>
     </div>
   );
 }
