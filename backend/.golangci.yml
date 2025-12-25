@@ -1,7 +1,9 @@
 version: "2"
 linters-settings:
   govet:
-    check-shadowing: true
+    enable-all: true
+    disable:
+      - shadow
   gocyclo:
     min-complexity: 15
   goconst:
@@ -34,6 +36,8 @@ linters:
     - unused
 
 issues:
+  exclude-dirs:
+    - vendor
   exclude-rules:
     # Exclude some linters from running on tests files
     - path: _test\.go

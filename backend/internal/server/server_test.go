@@ -9,6 +9,8 @@ import (
 	"gantry/internal/storage"
 )
 
+const testWorkflowName = "Test"
+
 func TestServer_ParseAndSaveWorkflow(t *testing.T) {
 	srv := &Server{
 		storage: storage.NewMemoryStorage(),
@@ -82,7 +84,7 @@ func TestServer_TriggerWorkflow(t *testing.T) {
 	}
 
 	wf := &models.Workflow{
-		Name: "Test",
+		Name: testWorkflowName,
 		Jobs: map[string]models.Job{
 			"test": {
 				RunsOn: "ubuntu",
@@ -99,7 +101,7 @@ func TestServer_TriggerWorkflow(t *testing.T) {
 	}
 
 	// Note: This will fail without Docker, but we can test the run creation
-	run, err := srv.TriggerWorkflow(context.Background(), "Test")
+	run, err := srv.TriggerWorkflow(context.Background(), testWorkflowName)
 	if err != nil && err.Error() != "failed to create executor: docker daemon not available" {
 		// Expected error if Docker not available
 		if run == nil {
@@ -108,7 +110,7 @@ func TestServer_TriggerWorkflow(t *testing.T) {
 		}
 	}
 
-	if run != nil && run.WorkflowName != "Test" {
+	if run != nil && run.WorkflowName != testWorkflowName {
 		t.Errorf("Run not created with correct workflow name")
 	}
 }
@@ -121,7 +123,7 @@ func TestServer_GetWorkflowStats(t *testing.T) {
 
 	// Save workflow
 	wf := &models.Workflow{
-		Name: "Test",
+		Name: testWorkflowName,
 		Jobs: map[string]models.Job{},
 	}
 	if err := srv.storage.SaveWorkflow(wf); err != nil {
@@ -136,7 +138,7 @@ func TestServer_GetWorkflowStats(t *testing.T) {
 		}
 		run := &models.WorkflowRun{
 			ID:           "run-" + string(rune(48+i)),
-			WorkflowName: "Test",
+			WorkflowName: testWorkflowName,
 			Status:       status,
 			Jobs:         make(map[string]models.Job),
 		}
@@ -145,7 +147,7 @@ func TestServer_GetWorkflowStats(t *testing.T) {
 		}
 	}
 
-	stats, err := srv.GetWorkflowStats("Test")
+	stats, err := srv.GetWorkflowStats(testWorkflowName)
 	if err != nil {
 		t.Fatalf("Failed to get stats: %v", err)
 	}
@@ -176,7 +178,7 @@ func TestServer_GetWorkflowRuns(t *testing.T) {
 
 	// Save workflow
 	wf := &models.Workflow{
-		Name: "Test",
+		Name: testWorkflowName,
 		Jobs: map[string]models.Job{},
 	}
 	if err := srv.storage.SaveWorkflow(wf); err != nil {
@@ -187,7 +189,7 @@ func TestServer_GetWorkflowRuns(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		run := &models.WorkflowRun{
 			ID:           "test-run-" + string(rune(48+i)),
-			WorkflowName: "Test",
+			WorkflowName: testWorkflowName,
 			Status:       successStatus,
 			Jobs:         make(map[string]models.Job),
 		}
@@ -208,7 +210,7 @@ func TestServer_GetWorkflowRuns(t *testing.T) {
 		}
 	}
 
-	runs, err := srv.GetWorkflowRuns("Test")
+	runs, err := srv.GetWorkflowRuns(testWorkflowName)
 	if err != nil {
 		t.Fatalf("Failed to get workflow runs: %v", err)
 	}
@@ -218,7 +220,7 @@ func TestServer_GetWorkflowRuns(t *testing.T) {
 	}
 
 	for _, run := range runs {
-		if run.WorkflowName != "Test" {
+		if run.WorkflowName != testWorkflowName {
 			t.Errorf("Got run from different workflow: %s", run.WorkflowName)
 		}
 	}
@@ -232,7 +234,7 @@ func TestServer_DeleteWorkflow(t *testing.T) {
 
 	// Save workflow
 	wf := &models.Workflow{
-		Name: "Test",
+		Name: testWorkflowName,
 		Jobs: map[string]models.Job{},
 	}
 	if err := srv.storage.SaveWorkflow(wf); err != nil {
@@ -242,7 +244,7 @@ func TestServer_DeleteWorkflow(t *testing.T) {
 	// Save runs for this workflow
 	run := &models.WorkflowRun{
 		ID:           "run-123",
-		WorkflowName: "Test",
+		WorkflowName: testWorkflowName,
 		Status:       successStatus,
 		Jobs:         make(map[string]models.Job),
 	}
@@ -251,13 +253,13 @@ func TestServer_DeleteWorkflow(t *testing.T) {
 	}
 
 	// Delete workflow (should cascade delete runs)
-	err := srv.DeleteWorkflow("Test")
+	err := srv.DeleteWorkflow(testWorkflowName)
 	if err != nil {
 		t.Fatalf("Failed to delete workflow: %v", err)
 	}
 
 	// Verify workflow deleted
-	_, err = srv.storage.GetWorkflow("Test")
+	_, err = srv.storage.GetWorkflow(testWorkflowName)
 	if err == nil {
 		t.Error("Workflow should be deleted but still exists")
 	}
@@ -282,7 +284,7 @@ func TestServer_GetRun(t *testing.T) {
 	// Save a run
 	run := &models.WorkflowRun{
 		ID:           "run-123",
-		WorkflowName: "Test",
+		WorkflowName: testWorkflowName,
 		Status:       successStatus,
 		Jobs:         make(map[string]models.Job),
 	}
@@ -300,8 +302,8 @@ func TestServer_GetRun(t *testing.T) {
 		t.Errorf("Expected run ID 'run-123', got '%s'", retrieved.ID)
 	}
 
-	if retrieved.WorkflowName != "Test" {
-		t.Errorf("Expected workflow name 'Test', got '%s'", retrieved.WorkflowName)
+	if retrieved.WorkflowName != testWorkflowName {
+		t.Errorf("Expected workflow name '%s', got '%s'", testWorkflowName, retrieved.WorkflowName)
 	}
 }
 
