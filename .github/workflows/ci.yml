@@ -33,9 +33,9 @@ jobs:
         run: go vet ./...
       
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v4
         with:
-          version: v2.7.2
+          version: latest
           working-directory: ./backend
           args: --timeout=5m
 
