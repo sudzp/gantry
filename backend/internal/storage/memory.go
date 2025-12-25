@@ -109,3 +109,16 @@ func (s *MemoryStorage) UpdateRun(run *models.WorkflowRun) error {
 	s.workflowRuns[run.ID] = run
 	return nil
 }
+
+// DeleteRunsByWorkflow deletes all runs for a workflow
+func (s *MemoryStorage) DeleteRunsByWorkflow(workflowName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for id, run := range s.workflowRuns {
+		if run.WorkflowName == workflowName {
+			delete(s.workflowRuns, id)
+		}
+	}
+	return nil
+}

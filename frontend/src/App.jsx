@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ArrowLeft } from "lucide-react";
 import Header from "./components/Header";
 import WorkflowList from "./components/WorkflowList";
-import RunList from "./components/RunList";
 import RunDetails from "./components/RunDetails";
+import WorkflowHistory from "./components/WorkflowHistory";
 import apiService from "./services/apiService";
 
 export default function App() {
@@ -11,8 +11,10 @@ export default function App() {
   const [runs, setRuns] = useState([]);
   const [workflowStats, setWorkflowStats] = useState({});
   const [selectedRun, setSelectedRun] = useState(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState("workflows"); // workflows, history, runDetails
 
   // Fetch workflows
   const fetchWorkflows = useCallback(async () => {
@@ -107,6 +109,19 @@ export default function App() {
   // Handle run selection
   const handleSelectRun = (runId) => {
     fetchRunDetails(runId);
+    setViewMode("runDetails");
+  };
+
+  // Handle view history
+  const handleViewHistory = (workflowName) => {
+    setSelectedWorkflow(workflowName);
+    setViewMode("history");
+  };
+
+  // Handle back from history
+  const handleBackFromHistory = () => {
+    setViewMode("workflows");
+    setSelectedWorkflow(null);
   };
 
   // Auto-refresh runs and stats
@@ -141,11 +156,14 @@ export default function App() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {selectedRun ? (
+        {viewMode === "runDetails" && selectedRun ? (
           // Run Details View
           <div>
             <button
-              onClick={() => setSelectedRun(null)}
+              onClick={() => {
+                setViewMode("workflows");
+                setSelectedRun(null);
+              }}
               className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 mb-6"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
@@ -153,12 +171,19 @@ export default function App() {
             </button>
             <RunDetails run={selectedRun} />
           </div>
+        ) : viewMode === "history" && selectedWorkflow ? (
+          // Workflow History View
+          <WorkflowHistory
+            workflowName={selectedWorkflow}
+            onBack={handleBackFromHistory}
+            onSelectRun={handleSelectRun}
+          />
         ) : (
           // Main Dashboard View
           <div className="space-y-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Pipelines
+                Workflows
               </h1>
               <p className="text-gray-600">
                 Manage and monitor your CI/CD workflows
@@ -172,6 +197,7 @@ export default function App() {
               onUpload={handleUpload}
               onTrigger={handleTrigger}
               onSelectRun={handleSelectRun}
+              onViewHistory={handleViewHistory}
               onDeleteWorkflow={handleDeleteWorkflow}
               uploadStatus={uploadStatus}
               loading={loading}

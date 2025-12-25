@@ -8,14 +8,14 @@ import (
 
 // WorkflowRun tracks execution of a workflow
 type WorkflowRun struct {
-	ID           string         `json:"id"`
-	WorkflowName string         `json:"workflow_name"`
-	Status       string         `json:"status"` // pending, running, success, failed
-	Jobs         map[string]Job `json:"jobs"`
-	JobOrder     []string       `json:"job_order"` // Preserve execution order
-	StartedAt    time.Time      `json:"started_at"`
-	CompletedAt  *time.Time     `json:"completed_at,omitempty"`
-	mu           sync.RWMutex
+	ID           string         `json:"id" bson:"id"`
+	WorkflowName string         `json:"workflow_name" bson:"workflow_name"`
+	Status       string         `json:"status" bson:"status"` // pending, running, success, failed
+	Jobs         map[string]Job `json:"jobs" bson:"jobs"`
+	JobOrder     []string       `json:"job_order" bson:"job_order"` // Preserve execution order
+	StartedAt    time.Time      `json:"started_at" bson:"started_at"`
+	CompletedAt  *time.Time     `json:"completed_at,omitempty" bson:"completed_at,omitempty"`
+	mu           sync.RWMutex   `bson:"-"`
 }
 
 // UpdateJob safely updates a job in the run

@@ -43,7 +43,8 @@ Gantry is a lightweight, self-hosted CI/CD platform inspired by GitHub Actions. 
 - 🔄 **Auto-Refresh** - UI updates automatically
 - 🎯 **Manual Triggers** - Start workflows with one click
 - 💾 **Persistent Storage** - MongoDB support for production
-- 🧪 **Unit Tests** - Comprehensive test coverage
+- 🧪 **Integration Tests** - Unit & integration tests (60%+ coverage)
+- 🔐 **Security Scanning** - Gosec (Go) + npm audit (JavaScript)
 - 🏗️ **Modular Architecture** - Clean, maintainable codebase
 
 ### Coming Soon
@@ -211,36 +212,42 @@ frontend/
 
 ```bash
 cd backend
-chmod +x run-tests.sh
-./run-tests.sh
+go test -v -race ./...                 # All tests
+go test -v -race -tags=integration ./internal/server/...  # Integration tests only
 ```
 
-Or manually:
+### Run Frontend Tests
 
 ```bash
-go test -v -cover ./...
+cd frontend
+npm test -- App.test.integration.js --coverage
 ```
 
 ### Test Coverage
 
-Current coverage: **~85%**
+Current coverage: **60%+ enforced** in CI/CD
 
 - ✅ Parser tests - YAML parsing & validation
-- ✅ Storage tests - Memory & MongoDB operations
+- ✅ Storage tests - Memory & MongoDB operations  
 - ✅ Models tests - Thread-safe operations
-- 🚧 Executor tests - Coming soon
-- 🚧 API tests - Coming soon
+- ✅ Server integration tests - Core workflow operations
+- ✅ Frontend integration tests - React component interactions
+- ✅ Security scanning - Gosec (Go) & npm audit (JavaScript)
 
 ---
 
 ## 📚 Documentation
 
-- **[Setup Guide](docs/SETUP.md)** - Detailed installation instructions
-- **[Workflow Syntax](docs/WORKFLOWS.md)** - How to write workflows
+**[📖 View Documentation Index](docs/INDEX.md)** - Complete guide to all docs
+
+- **[Quick Start](docs/DEPLOYMENT.md)** - Get running in 5 minutes
+- **[Setup Guide](docs/SETUP.md)** - Detailed installation & configuration
 - **[API Reference](docs/API.md)** - REST API documentation
-- **[MongoDB Setup](docs/MONGODB.md)** - MongoDB configuration
+- **[Workflow Syntax](docs/WORKFLOWS.md)** - How to write workflows
+- **[Testing Guide](docs/TESTING.md)** - Testing & CI/CD pipeline
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Deployment & production setup
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues & solutions
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
-- **[Architecture Guide](docs/ARCHITECTURE.md)** - System design & decisions
 
 ---
 
@@ -317,19 +324,24 @@ cd frontend
 npm start                  # Start dev server
 ```
 
-### Code Style
+### Code Quality
 
-- **Go**: Follow standard Go conventions (`gofmt`, `golint`)
-- **JavaScript**: Use Prettier (2 spaces)
+- **Go Linting**: `gofmt`, `go vet`, `golangci-lint`
+- **Go Security**: Gosec scanning in CI/CD
+- **JavaScript Linting**: ESLint, Prettier (2 spaces)
+- **JavaScript Security**: npm audit (moderate level)
+- **Test Requirements**: Minimum 60% coverage enforced
 - **Commits**: Use [Conventional Commits](https://www.conventionalcommits.org/)
 
 ---
 
 ## 📊 Project Stats
 
-- **Backend**: ~2,000 lines of Go code
-- **Frontend**: ~800 lines of React code
-- **Test Coverage**: ~85%
+- **Backend**: ~2,500 lines of Go code (with tests)
+- **Frontend**: ~1,000 lines of React code (with tests)
+- **Test Coverage**: **60%+ enforced** in CI/CD
+- **Integration Tests**: 6 backend + 8 frontend tests
+- **CI/CD Jobs**: 10 jobs (lint, test, security, build)
 - **Docker Images**: Ubuntu, Alpine
 - **Dependencies**: Minimal (see go.mod & package.json)
 

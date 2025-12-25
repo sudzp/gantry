@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, Upload, FileText, AlertCircle, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { Play, Upload, FileText, AlertCircle, Clock, CheckCircle, AlertTriangle, Trash2, TrendingUp } from "lucide-react";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -30,9 +30,12 @@ const StatusIcon = ({ status }) => {
 export default function WorkflowList({
   workflows,
   runs,
+  workflowStats,
   onUpload,
   onTrigger,
   onSelectRun,
+  onDeleteWorkflow,
+  onViewHistory,
   uploadStatus,
   loading,
 }) {
@@ -52,6 +55,13 @@ export default function WorkflowList({
     if (!dateString) return "—";
     const date = new Date(dateString);
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return "—";
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+    return `${Math.round(seconds / 3600)}h`;
   };
 
   return (
@@ -111,6 +121,7 @@ export default function WorkflowList({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {workflows.map((wf) => {
               const latestRun = getLatestRun(wf.name);
+              const stats = workflowStats[wf.name] || {};
               const colors = getStatusColor(latestRun?.status);
 
               return (
@@ -120,10 +131,15 @@ export default function WorkflowList({
                 >
                   {/* Status Bar */}
                   {latestRun && (
-                    <div className={`${colors.bg} ${colors.border} border-b px-4 py-2 flex items-center gap-2`}>
-                      <StatusIcon status={latestRun.status} />
-                      <span className={`text-sm font-medium ${colors.text} capitalize`}>
-                        {latestRun.status}
+                    <div className={`${colors.bg} ${colors.border} border-b px-4 py-2 flex items-center justify-between`}>
+                      <div className="flex items-center gap-2">
+                        <StatusIcon status={latestRun.status} />
+                        <span className={`text-sm font-medium ${colors.text} capitalize`}>
+                          {latestRun.status}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {formatTime(latestRun.started_at)}
                       </span>
                     </div>
                   )}
@@ -140,6 +156,40 @@ export default function WorkflowList({
                         {Object.keys(wf.jobs || {}).length !== 1 ? "s" : ""}
                       </p>
                     </div>
+
+                    {/* Stats Bar */}
+                    {stats.total_runs > 0 && (
+                      <div className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 text-xs">
+                            <TrendingUp className="w-4 h-4 text-gray-600" />
+                            <span className="text-gray-600">
+                              <span className="font-semibold text-gray-900">{stats.total_runs}</span> total runs
+                            </span>
+                          </div>
+                          {stats.success_rate !== undefined && (
+                            <span className={`text-xs font-semibold ${stats.success_rate >= 80 ? 'text-green-600' : stats.success_rate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {Math.round(stats.success_rate)}%
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <span>
+                            ✓ <span className="font-semibold text-green-600">{stats.successful_runs}</span>
+                          </span>
+                          {stats.failed_runs > 0 && (
+                            <span>
+                              ✗ <span className="font-semibold text-red-600">{stats.failed_runs}</span>
+                            </span>
+                          )}
+                          {stats.average_duration > 0 && (
+                            <span>
+                              ⏱ <span className="font-semibold text-gray-700">{formatDuration(stats.average_duration)}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Latest Run Info */}
                     {latestRun ? (
@@ -174,9 +224,24 @@ export default function WorkflowList({
                           onClick={() => onSelectRun(latestRun.id)}
                           className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm font-medium rounded transition"
                         >
-                          View Logs
+                          Logs
                         </button>
                       )}
+                      <button
+                        onClick={() => onViewHistory(wf.name)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 text-sm font-medium rounded transition"
+                        title="View all runs"
+                      >
+                        <Clock className="w-4 h-4 mr-1" />
+                        History
+                      </button>
+                      <button
+                        onClick={() => onDeleteWorkflow(wf.name)}
+                        className="inline-flex items-center justify-center px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium rounded transition"
+                        title="Delete workflow"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 </div>

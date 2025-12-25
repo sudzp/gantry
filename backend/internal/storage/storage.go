@@ -15,4 +15,5 @@ type Storage interface {
 	GetRun(id string) (*models.WorkflowRun, error)
 	ListRuns() ([]*models.WorkflowRun, error)
 	UpdateRun(run *models.WorkflowRun) error
+	DeleteRunsByWorkflow(workflowName string) error
 }

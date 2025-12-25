@@ -137,6 +137,23 @@ func (s *MongoStorage) SaveRun(run *models.WorkflowRun) error {
 	return nil
 }
 
+// DeleteRunsByWorkflow deletes all runs for a workflow
+func (s *MongoStorage) DeleteRunsByWorkflow(workflowName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := s.workflowRuns.DeleteMany(ctx, bson.M{"workflow_name": workflowName})
+	if err != nil {
+		return fmt.Errorf("failed to delete runs: %w", err)
+	}
+
+	if result.DeletedCount > 0 {
+		fmt.Printf("Deleted %d runs for workflow '%s'\n", result.DeletedCount, workflowName)
+	}
+
+	return nil
+}
+
 // GetRun retrieves a run by ID
 func (s *MongoStorage) GetRun(id string) (*models.WorkflowRun, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

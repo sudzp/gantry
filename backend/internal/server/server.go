@@ -148,9 +148,9 @@ func (s *Server) GetWorkflowStats(workflowName string) (map[string]interface{}, 
 
 	// Calculate statistics
 	stats := map[string]interface{}{
-		"total_runs":      len(workflowRuns),
-		"successful_runs": 0,
-		"failed_runs":     0,
+		"total_runs":       len(workflowRuns),
+		"successful_runs":  0,
+		"failed_runs":      0,
 		"average_duration": 0,
 	}
 
@@ -205,8 +205,14 @@ func (s *Server) GetWorkflowRuns(workflowName string) ([]*models.WorkflowRun, er
 	return workflowRuns, nil
 }
 
-// DeleteWorkflow deletes a workflow
+// DeleteWorkflow deletes a workflow and all associated runs
 func (s *Server) DeleteWorkflow(name string) error {
+	// Delete all runs for this workflow (cascade delete)
+	if err := s.storage.DeleteRunsByWorkflow(name); err != nil {
+		log.Printf("WARNING: failed to delete runs for workflow '%s': %v", name, err)
+	}
+
+	// Delete the workflow itself
 	return s.storage.DeleteWorkflow(name)
 }
 

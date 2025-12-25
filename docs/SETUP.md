@@ -8,8 +8,8 @@ A lightweight, self-hosted CI/CD platform built with Go and React, inspired by G
 
 ## Prerequisites
 
-- **Go** 1.19+ installed
-- **Node.js** 16+ and npm
+- **Go** 1.21+ installed
+- **Node.js** 18+ and npm
 - **Docker** installed and running
 - Git (optional)
 
@@ -92,6 +92,26 @@ npm start
 ```
 
 The UI will open at `http://localhost:3000`
+
+## Testing
+
+### Backend Tests
+
+```bash
+cd backend
+go test -v -race ./...                 # All tests
+go test -v -race -tags=integration ./internal/server/...  # Integration tests only
+```
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm test -- --coverage --watchAll=false
+npm test -- App.test.integration.js --coverage  # Integration tests
+```
+
+See [Testing Guide](TESTING.md) for more details.
 
 ## API Endpoints
 

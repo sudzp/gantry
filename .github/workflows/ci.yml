@@ -57,6 +57,10 @@ jobs:
         working-directory: ./backend
         run: go test -v -race -coverprofile=coverage.out ./...
       
+      - name: Run integration tests
+        working-directory: ./backend
+        run: go test -v -race -tags=integration ./internal/server/...
+      
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
@@ -68,10 +72,28 @@ jobs:
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 20" | bc -l) )); then
-            echo "Coverage is below 20%"
+          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+            echo "Coverage is below 60%"
             exit 1
           fi
+
+  backend-security:
+    name: Backend Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: '-no-fail -fmt json -out gosec-report.json ./backend/...'
+      
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gosec-report
+          path: gosec-report.json
 
   backend-build:
     name: Backend Build
@@ -130,9 +152,34 @@ jobs:
         working-directory: ./frontend
         run: npm ci
       
-      - name: Run tests
+      - name: Run unit tests
         working-directory: ./frontend
         run: npm test -- --coverage --watchAll=false
+      
+      - name: Run integration tests
+        working-directory: ./frontend
+        run: npm test -- App.test.integration.js --coverage --watchAll=false
+
+  frontend-security:
+    name: Frontend Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Run npm audit
+        working-directory: ./frontend
+        run: npm audit --audit-level=moderate
 
   frontend-build:
     name: Frontend Build
@@ -167,9 +214,11 @@ jobs:
     needs: 
       - backend-lint
       - backend-test
+      - backend-security
       - backend-build
       - frontend-lint
       - frontend-test
+      - frontend-security
       - frontend-build
     steps:
       - name: Success

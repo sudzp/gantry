@@ -190,3 +190,42 @@ func TestMemoryStorage_Concurrency(t *testing.T) {
 		t.Errorf("Expected 10 workflows, got %d", len(workflows))
 	}
 }
+
+func TestMemoryStorage_DeleteRunsByWorkflow(t *testing.T) {
+	store := NewMemoryStorage()
+
+	// Save workflow
+	wf := &models.Workflow{Name: "TestWorkflow", Jobs: map[string]models.Job{}}
+	_ = store.SaveWorkflow(wf)
+
+	// Save runs for this workflow
+	run1 := &models.WorkflowRun{ID: "run-1", WorkflowName: "TestWorkflow", Status: "success", Jobs: make(map[string]models.Job)}
+	run2 := &models.WorkflowRun{ID: "run-2", WorkflowName: "TestWorkflow", Status: "success", Jobs: make(map[string]models.Job)}
+	run3 := &models.WorkflowRun{ID: "run-3", WorkflowName: "OtherWorkflow", Status: "success", Jobs: make(map[string]models.Job)}
+
+	_ = store.SaveRun(run1)
+	_ = store.SaveRun(run2)
+	_ = store.SaveRun(run3)
+
+	// Verify we have 3 runs
+	runs, _ := store.ListRuns()
+	if len(runs) != 3 {
+		t.Fatalf("Expected 3 runs initially, got %d", len(runs))
+	}
+
+	// Delete runs for TestWorkflow
+	err := store.DeleteRunsByWorkflow("TestWorkflow")
+	if err != nil {
+		t.Fatalf("Failed to delete runs: %v", err)
+	}
+
+	// Verify only run3 remains
+	runs, _ = store.ListRuns()
+	if len(runs) != 1 {
+		t.Errorf("Expected 1 run after deletion, got %d", len(runs))
+	}
+
+	if runs[0].ID != "run-3" {
+		t.Errorf("Expected run-3 to remain, got %s", runs[0].ID)
+	}
+}

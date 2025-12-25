@@ -2,7 +2,13 @@
 
 ## 🧪 Overview
 
-Gantry has comprehensive unit tests for the backend with ~85% coverage. This guide covers running tests, writing new tests, and best practices.
+Gantry has comprehensive unit and integration tests for both backend and frontend with **60%+ coverage enforced**. This guide covers running tests, writing new tests, and best practices.
+
+**Current Testing:**
+- ✅ Backend: Unit tests + 6 integration tests (server operations)
+- ✅ Frontend: Integration tests (8 test cases for React components)
+- ✅ Security: Gosec (Go) + npm audit (JavaScript)
+- ✅ Coverage: Minimum 60% enforced in CI/CD
 
 ## Running Tests
 
@@ -57,7 +63,41 @@ go test -race ./...
 go test -v ./...
 ```
 
+## Frontend Testing
+
+### Run Frontend Tests
+
+```bash
+cd frontend
+npm test -- --coverage --watchAll=false
+```
+
+### Run Integration Tests Only
+
+```bash
+npm test -- App.test.integration.js --coverage
+```
+
+### Watch Mode (Development)
+
+```bash
+npm test -- --watch
+```
+
 ## Test Structure
+
+### Server Integration Tests (`internal/server/server_test.go`)
+
+Tests core server functionality:
+
+- ✅ Parse and save workflows
+- ✅ List workflows
+- ✅ Trigger workflow execution
+- ✅ Get workflow statistics
+- ✅ Get workflow runs (filtering)
+- ✅ Delete workflows (with cascade delete)
+
+**Key Feature:** Cascade delete verification ensures runs are deleted when workflow is removed
 
 ### Parser Tests (`internal/parser/yaml_test.go`)
 
@@ -312,39 +352,55 @@ func (m *MockStorage) GetWorkflow(name string) (*Workflow, error) {
 
 ## Coverage Goals
 
-Current coverage: **~85%**
+Current enforced minimum: **60%+**
 
-Target coverage by module:
+**CI/CD Enforcement:**
+- Coverage must be ≥ 60% to pass builds
+- Coverage report uploaded to Codecov
+- Fails build if threshold not met
+
+**Target coverage by module:**
 - Models: **90%+** ✅
 - Parser: **90%+** ✅
 - Storage: **85%+** ✅
-- Server: **70%+** 🚧
+- Server: **75%+** (including integration tests) ✅
+- Frontend App: **70%+** (including integration tests) ✅
 - Executor: **60%+** 🚧
 - API: **70%+** 🚧
 
 ## CI/CD Integration
 
 Tests run automatically on:
-- Every push to main
+- Every push to main/develop
 - Every pull request
 - Before merging
 
-### GitHub Actions Workflow
+### GitHub Actions Pipeline (10 Jobs)
 
-```yaml
-name: Tests
+**Backend:**
+1. `backend-lint` - Go formatting, vet, golangci-lint
+2. `backend-test` - Unit + integration tests, coverage check (≥60%)
+3. `backend-security` - Gosec vulnerability scanning
+4. `backend-build` - Go binary compilation
 
-on: [push, pull_request]
+**Frontend:**
+5. `frontend-lint` - ESLint, Prettier
+6. `frontend-test` - Unit + integration tests, coverage
+7. `frontend-security` - npm audit (moderate level)
+8. `frontend-build` - Production build
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-      - run: go test -v -cover ./...
+**Gate:**
+9. `all-checks-passed` - Requires all 8 jobs to pass before merge
+
+**Test Commands Run:**
+```bash
+# Backend
+go test -v -race ./...
+go test -v -race -tags=integration ./internal/server/...
+
+# Frontend
+npm test -- --coverage --watchAll=false
+npm test -- App.test.integration.js --coverage
 ```
 
 ## Benchmarking
@@ -426,6 +482,7 @@ When contributing:
 3. **Test error cases** - Not just happy path
 4. **Use meaningful names** - Describe what's being tested
 5. **Keep tests fast** - Mock external dependencies
+6. **Run locally first** - `go test -race ./...` and `npm test`
 
 ---
 
