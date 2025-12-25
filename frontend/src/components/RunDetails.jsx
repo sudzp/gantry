@@ -191,7 +191,7 @@ export default function RunDetails({ run }) {
         </div>
         <div className="text-sm text-gray-600">
           <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-            #{run.id.slice(0, 7)}
+            #{run.id}
           </span>
         </div>
       </div>

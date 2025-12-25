@@ -29,6 +29,29 @@ class ApiService {
     return response.json();
   }
 
+  async deleteWorkflow(name) {
+    const response = await fetch(`${API_URL}/workflows/${name}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Failed to delete workflow");
+    return response.json();
+  }
+
+  async getWorkflowStats(name) {
+    const response = await fetch(`${API_URL}/workflows/${name}/stats`);
+    if (!response.ok) throw new Error("Failed to fetch workflow stats");
+    return response.json();
+  }
+
+  async getWorkflowRuns(name) {
+    const response = await fetch(`${API_URL}/workflows/${name}/runs`);
+    if (!response.ok) throw new Error("Failed to fetch workflow runs");
+    const data = await response.json();
+    return (data || []).sort(
+      (a, b) => new Date(b.started_at) - new Date(a.started_at)
+    );
+  }
+
   // Runs
   async getRuns() {
     const response = await fetch(`${API_URL}/runs`);

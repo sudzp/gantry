@@ -131,6 +131,85 @@ func (s *Server) ListRuns() ([]*models.WorkflowRun, error) {
 	return s.storage.ListRuns()
 }
 
+// GetWorkflowStats returns statistics for a workflow
+func (s *Server) GetWorkflowStats(workflowName string) (map[string]interface{}, error) {
+	runs, err := s.storage.ListRuns()
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter runs for this workflow
+	var workflowRuns []*models.WorkflowRun
+	for _, run := range runs {
+		if run.WorkflowName == workflowName {
+			workflowRuns = append(workflowRuns, run)
+		}
+	}
+
+	// Calculate statistics
+	stats := map[string]interface{}{
+		"total_runs":      len(workflowRuns),
+		"successful_runs": 0,
+		"failed_runs":     0,
+		"average_duration": 0,
+	}
+
+	if len(workflowRuns) == 0 {
+		return stats, nil
+	}
+
+	var successCount, failureCount int
+	var totalDuration int64
+
+	for _, run := range workflowRuns {
+		if run.Status == "success" {
+			successCount++
+		} else if run.Status == "failed" {
+			failureCount++
+		}
+
+		if run.CompletedAt != nil {
+			duration := run.CompletedAt.Unix() - run.StartedAt.Unix()
+			totalDuration += duration
+		}
+	}
+
+	stats["successful_runs"] = successCount
+	stats["failed_runs"] = failureCount
+
+	if successCount > 0 {
+		stats["success_rate"] = float64(successCount) / float64(len(workflowRuns)) * 100
+	}
+
+	if len(workflowRuns) > 0 {
+		stats["average_duration"] = totalDuration / int64(len(workflowRuns))
+	}
+
+	return stats, nil
+}
+
+// GetWorkflowRuns returns all runs for a specific workflow
+func (s *Server) GetWorkflowRuns(workflowName string) ([]*models.WorkflowRun, error) {
+	runs, err := s.storage.ListRuns()
+	if err != nil {
+		return nil, err
+	}
+
+	var workflowRuns []*models.WorkflowRun
+	for _, run := range runs {
+		if run.WorkflowName == workflowName {
+			workflowRuns = append(workflowRuns, run)
+		}
+	}
+
+	return workflowRuns, nil
+}
+
+// DeleteWorkflow deletes a workflow
+func (s *Server) DeleteWorkflow(name string) error {
+	return s.storage.DeleteWorkflow(name)
+}
+
 // executeWorkflow executes a workflow
 func (s *Server) executeWorkflow(ctx context.Context, wf *models.Workflow) (*models.WorkflowRun, error) {
 	runID := fmt.Sprintf("run-%d", time.Now().Unix())

@@ -9,6 +9,7 @@ import apiService from "./services/apiService";
 export default function App() {
   const [workflows, setWorkflows] = useState([]);
   const [runs, setRuns] = useState([]);
+  const [workflowStats, setWorkflowStats] = useState({});
   const [selectedRun, setSelectedRun] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,19 @@ export default function App() {
       setWorkflows(data || []);
     } catch (err) {
       console.error("Failed to fetch workflows:", err);
+    }
+  }, []);
+
+  // Fetch workflow stats
+  const fetchStats = useCallback(async (workflowNames) => {
+    try {
+      const stats = {};
+      for (const name of workflowNames) {
+        stats[name] = await apiService.getWorkflowStats(name);
+      }
+      setWorkflowStats(stats);
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
     }
   }, []);
 
@@ -74,12 +88,28 @@ export default function App() {
     }
   };
 
+  // Handle workflow deletion
+  const handleDeleteWorkflow = async (workflowName) => {
+    if (!window.confirm(`Are you sure you want to delete "${workflowName}"? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiService.deleteWorkflow(workflowName);
+      setUploadStatus(`✓ Workflow "${workflowName}" deleted successfully!`);
+      await fetchWorkflows();
+      setTimeout(() => setUploadStatus(""), 3000);
+    } catch (err) {
+      setUploadStatus(`✗ Failed to delete: ${err.message}`);
+    }
+  };
+
   // Handle run selection
   const handleSelectRun = (runId) => {
     fetchRunDetails(runId);
   };
 
-  // Auto-refresh runs
+  // Auto-refresh runs and stats
   useEffect(() => {
     fetchWorkflows();
     fetchRuns();
@@ -87,6 +117,13 @@ export default function App() {
     const interval = setInterval(fetchRuns, 5000);
     return () => clearInterval(interval);
   }, [fetchWorkflows, fetchRuns]);
+
+  // Fetch stats when workflows change
+  useEffect(() => {
+    if (workflows.length > 0) {
+      fetchStats(workflows.map((w) => w.name));
+    }
+  }, [workflows, fetchStats]);
 
   // Auto-refresh selected run details
   useEffect(() => {
@@ -103,43 +140,41 @@ export default function App() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 py-8">
         {selectedRun ? (
           // Run Details View
           <div>
             <button
               onClick={() => setSelectedRun(null)}
-              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 mb-4"
+              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 mb-6"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to workflow runs
+              Back to workflows
             </button>
             <RunDetails run={selectedRun} />
           </div>
         ) : (
           // Main Dashboard View
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-                
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Pipelines
               </h1>
               <p className="text-gray-600">
-                Automate your workflow with CI/CD pipelines
+                Manage and monitor your CI/CD workflows
               </p>
             </div>
 
             <WorkflowList
               workflows={workflows}
+              runs={runs}
+              workflowStats={workflowStats}
               onUpload={handleUpload}
               onTrigger={handleTrigger}
+              onSelectRun={handleSelectRun}
+              onDeleteWorkflow={handleDeleteWorkflow}
               uploadStatus={uploadStatus}
               loading={loading}
-            />
-
-            <RunList
-              runs={runs}
-              onSelectRun={handleSelectRun}
-              onRefresh={fetchRuns}
             />
           </div>
         )}

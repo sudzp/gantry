@@ -113,3 +113,56 @@ func (h *Handler) HandleListRuns(w http.ResponseWriter, _ *http.Request) {
 		log.Printf("failed to encode response: %v", err)
 	}
 }
+
+// HandleDeleteWorkflow handles workflow deletion
+func (h *Handler) HandleDeleteWorkflow(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["name"]
+
+	if err := h.server.DeleteWorkflow(name); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to delete workflow: %v", err), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]string{
+		"message": "Workflow deleted successfully",
+		"name":    name,
+	}); err != nil {
+		log.Printf("failed to encode response: %v", err)
+	}
+}
+
+// HandleGetWorkflowStats handles getting workflow statistics
+func (h *Handler) HandleGetWorkflowStats(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["name"]
+
+	stats, err := h.server.GetWorkflowStats(name)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get stats: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(stats); err != nil {
+		log.Printf("failed to encode response: %v", err)
+	}
+}
+
+// HandleGetWorkflowRuns handles getting workflow run history
+func (h *Handler) HandleGetWorkflowRuns(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["name"]
+
+	runs, err := h.server.GetWorkflowRuns(name)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get runs: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(runs); err != nil {
+		log.Printf("failed to encode response: %v", err)
+	}
+}

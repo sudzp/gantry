@@ -13,7 +13,10 @@ func SetupRoutes(h *Handler) http.Handler {
 	// Workflow routes
 	r.HandleFunc("/api/workflows", h.HandleUploadWorkflow).Methods("POST", "OPTIONS")
 	r.HandleFunc("/api/workflows", h.HandleListWorkflows).Methods("GET")
+	r.HandleFunc("/api/workflows/{name}", h.HandleDeleteWorkflow).Methods("DELETE", "OPTIONS")
 	r.HandleFunc("/api/workflows/{name}/trigger", h.HandleTriggerWorkflow).Methods("POST", "OPTIONS")
+	r.HandleFunc("/api/workflows/{name}/stats", h.HandleGetWorkflowStats).Methods("GET")
+	r.HandleFunc("/api/workflows/{name}/runs", h.HandleGetWorkflowRuns).Methods("GET")
 
 	// Run routes
 	r.HandleFunc("/api/runs", h.HandleListRuns).Methods("GET")

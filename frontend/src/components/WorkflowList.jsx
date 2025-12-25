@@ -1,96 +1,188 @@
 import React from "react";
-import { Play, Upload, FileText, AlertCircle } from "lucide-react";
+import { Play, Upload, FileText, AlertCircle, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case "success":
+      return { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", icon: "text-green-600" };
+    case "failed":
+      return { bg: "bg-red-50", border: "border-red-200", text: "text-red-700", icon: "text-red-600" };
+    case "running":
+      return { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", icon: "text-blue-600" };
+    default:
+      return { bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-700", icon: "text-gray-600" };
+  }
+};
+
+const StatusIcon = ({ status }) => {
+  switch (status) {
+    case "success":
+      return <CheckCircle className="w-5 h-5 text-green-600" />;
+    case "failed":
+      return <AlertTriangle className="w-5 h-5 text-red-600" />;
+    case "running":
+      return <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />;
+    default:
+      return <Clock className="w-5 h-5 text-gray-600" />;
+  }
+};
 
 export default function WorkflowList({
   workflows,
+  runs,
   onUpload,
   onTrigger,
+  onSelectRun,
   uploadStatus,
   loading,
 }) {
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-        <h2 className="text-lg font-semibold text-gray-900">All workflows</h2>
-      </div>
+  const getLatestRun = (workflowName) => {
+    return runs
+      .filter((r) => r.workflow_name === workflowName)
+      .sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
+  };
 
+  const formatTime = (dateString) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
+
+  return (
+    <div className="space-y-6">
       {/* Upload Section */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-start gap-4">
+          <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
           <div className="flex-1">
-            <h3 className="font-medium text-blue-900 text-sm mb-1">
-              Get started with workflows
+            <h3 className="font-semibold text-gray-900 mb-1">
+              Add a new workflow
             </h3>
-            <p className="text-sm text-blue-800 mb-3">
+            <p className="text-sm text-gray-600 mb-4">
               Upload a YAML workflow file to automate your CI/CD pipeline.
             </p>
-            <label className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md cursor-pointer transition">
-              <Upload className="w-4 h-4 mr-2" />
-              Upload workflow file
-              <input
-                type="file"
-                accept=".yml,.yaml"
-                onChange={onUpload}
-                className="hidden"
-              />
-            </label>
-            {uploadStatus && (
-              <p
-                className={`mt-2 text-sm ${
-                  uploadStatus.startsWith("✓")
-                    ? "text-green-700"
-                    : "text-red-700"
-                }`}
-              >
-                {uploadStatus}
-              </p>
-            )}
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md cursor-pointer transition">
+                <Upload className="w-4 h-4 mr-2" />
+                Upload workflow file
+                <input
+                  type="file"
+                  accept=".yml,.yaml"
+                  onChange={onUpload}
+                  className="hidden"
+                />
+              </label>
+              {uploadStatus && (
+                <p
+                  className={`text-sm font-medium ${
+                    uploadStatus.startsWith("✓")
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {uploadStatus}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Workflows List */}
-      <div className="divide-y divide-gray-200">
+      {/* Workflows Grid */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Workflows</h2>
         {workflows.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <div className="bg-white rounded-lg border border-gray-200 px-8 py-12 text-center">
+            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 text-base mb-2 font-medium">
+              No workflows yet
+            </p>
             <p className="text-gray-500 text-sm">
-              No workflows yet. Upload your first workflow to get started.
+              Upload your first workflow file to get started.
             </p>
           </div>
         ) : (
-          workflows.map((wf) => (
-            <div
-              key={wf.name}
-              className="px-6 py-4 hover:bg-gray-50 transition"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-gray-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{wf.name}</div>
-                    <div className="text-sm text-gray-500 mt-0.5">
-                      {Object.keys(wf.jobs || {}).length} job
-                      {Object.keys(wf.jobs || {}).length !== 1 ? "s" : ""}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {workflows.map((wf) => {
+              const latestRun = getLatestRun(wf.name);
+              const colors = getStatusColor(latestRun?.status);
+
+              return (
+                <div
+                  key={wf.name}
+                  className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-md transition"
+                >
+                  {/* Status Bar */}
+                  {latestRun && (
+                    <div className={`${colors.bg} ${colors.border} border-b px-4 py-2 flex items-center gap-2`}>
+                      <StatusIcon status={latestRun.status} />
+                      <span className={`text-sm font-medium ${colors.text} capitalize`}>
+                        {latestRun.status}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Workflow Card Content */}
+                  <div className="p-4">
+                    {/* Workflow Name & Jobs */}
+                    <div className="mb-4">
+                      <h3 className="text-base font-semibold text-gray-900 truncate">
+                        {wf.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {Object.keys(wf.jobs || {}).length} job
+                        {Object.keys(wf.jobs || {}).length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+
+                    {/* Latest Run Info */}
+                    {latestRun ? (
+                      <div className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+                        <p className="text-xs text-gray-600 mb-2">
+                          <span className="font-medium">Latest run:</span> #{latestRun.id.slice(-6)}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          <span className="font-medium">Triggered:</span> {formatDate(latestRun.started_at)} at {formatTime(latestRun.started_at)}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+                        <p className="text-xs text-gray-600">
+                          <span className="font-medium">Status:</span> Never run
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onTrigger(wf.name)}
+                        disabled={loading}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition"
+                      >
+                        <Play className="w-4 h-4 mr-1" />
+                        Run
+                      </button>
+                      {latestRun && (
+                        <button
+                          onClick={() => onSelectRun(latestRun.id)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm font-medium rounded transition"
+                        >
+                          View Logs
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => onTrigger(wf.name)}
-                  disabled={loading}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition"
-                  title="Run workflow"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Run workflow
-                </button>
-              </div>
-            </div>
-          ))
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
