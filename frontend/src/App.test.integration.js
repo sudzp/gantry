@@ -189,7 +189,7 @@ describe('App Integration Tests', () => {
 
     render(<App />);
     
-    const uploadInput = screen.getByDisplayValue('Upload workflow file').closest('label').querySelector('input');
+    const uploadInput = screen.getByRole('textbox', { hidden: true, name: /upload/i });
     
     const file = new File(['name: Deploy\njobs:\n  deploy:\n    runs-on: ubuntu\n    steps:\n      - run: echo deploy'], 'deploy.yml', { type: 'text/yaml' });
     
@@ -205,8 +205,9 @@ describe('App Integration Tests', () => {
     
     await waitFor(() => {
       expect(screen.getByText('Build')).toBeInTheDocument();
-      expect(screen.getByText(/80%/)).toBeInTheDocument(); // success rate
-      expect(screen.getByText(/5 runs/)).toBeInTheDocument(); // total runs
     });
+    
+    expect(screen.getByText(/80%/)).toBeInTheDocument(); // success rate
+    expect(screen.getByText(/5 runs/)).toBeInTheDocument(); // total runs
   });
 });
