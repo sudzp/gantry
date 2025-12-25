@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache-dependency-path: ./backend/go.sum
       
       - name: Run gofmt
         working-directory: ./backend
@@ -35,7 +36,7 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v2.7.2
-          working-dir: ./backend
+          working-directory: ./backend
           args: --timeout=5m
 
   backend-test:
@@ -48,6 +49,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache-dependency-path: ./backend/go.sum
       
       - name: Download dependencies
         working-directory: ./backend
