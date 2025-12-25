@@ -9,11 +9,6 @@ import (
 	"gantry/internal/storage"
 )
 
-const (
-	successStatus = "success"
-	failedStatus  = "failed"
-)
-
 func TestServer_ParseAndSaveWorkflow(t *testing.T) {
 	srv := &Server{
 		storage: storage.NewMemoryStorage(),

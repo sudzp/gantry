@@ -15,6 +15,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const (
+	successStatus = "success"
+	failedStatus  = "failed"
+	runningStatus = "running"
+)
+
 // Config holds server configuration
 type Config struct {
 	StorageType string // "memory" or "mongodb"
@@ -163,9 +169,9 @@ func (s *Server) GetWorkflowStats(workflowName string) (map[string]interface{}, 
 
 	for _, run := range workflowRuns {
 		switch run.Status {
-		case "success":
+		case successStatus:
 			successCount++
-		case "failed":
+		case failedStatus:
 			failureCount++
 		}
 
@@ -224,7 +230,7 @@ func (s *Server) executeWorkflow(ctx context.Context, wf *models.Workflow) (*mod
 	run := &models.WorkflowRun{
 		ID:           runID,
 		WorkflowName: wf.Name,
-		Status:       "running",
+		Status:       runningStatus,
 		Jobs:         make(map[string]models.Job),
 		JobOrder:     wf.JobOrder,
 		StartedAt:    time.Now(),
@@ -267,8 +273,20 @@ func (s *Server) runJobs(_ context.Context, run *models.WorkflowRun, wf *models.
 		job := wf.Jobs[jobName]
 		log.Printf("Starting job: %s", jobName)
 
+		// Check if executor is available
+		if s.executor == nil {
+			job.Status = failedStatus
+			job.Output = "ERROR: executor not initialized"
+			allSuccess = false
+			run.UpdateJob(jobName, job)
+			if err := s.storage.UpdateRun(run); err != nil {
+				log.Printf("ERROR: failed to update run status in storage: %v", err)
+			}
+			break
+		}
+
 		jobStartTime := time.Now()
-		job.Status = "running"
+		job.Status = runningStatus
 		job.StartedAt = jobStartTime
 		run.UpdateJob(jobName, job)
 
@@ -283,11 +301,11 @@ func (s *Server) runJobs(_ context.Context, run *models.WorkflowRun, wf *models.
 		job.EndedAt = &jobEndTime
 
 		if err != nil {
-			job.Status = "failed"
+			job.Status = failedStatus
 			allSuccess = false
 			log.Printf("Job %s failed: %v", jobName, err)
 		} else {
-			job.Status = "success"
+			job.Status = successStatus
 			log.Printf("Job %s completed successfully", jobName)
 		}
 
@@ -302,9 +320,9 @@ func (s *Server) runJobs(_ context.Context, run *models.WorkflowRun, wf *models.
 	}
 
 	if allSuccess {
-		run.SetStatus("success")
+		run.SetStatus(successStatus)
 	} else {
-		run.SetStatus("failed")
+		run.SetStatus(failedStatus)
 	}
 
 	if err := s.storage.UpdateRun(run); err != nil {
