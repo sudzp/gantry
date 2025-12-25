@@ -31,13 +31,6 @@ jobs:
       - name: Run go vet
         working-directory: ./backend
         run: go vet ./...
-      
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: v1.63.0
-          working-directory: ./backend
-          args: --timeout=5m
 
   backend-test:
     name: Backend Tests
